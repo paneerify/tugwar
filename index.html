@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tug of War Math Game</title>
+    <link rel="stylesheet" href="static/css/style.css">
+    <!-- Roboto Mono font -->
+    <!--<link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700&display=swap" rel="stylesheet">-->
+</head>
+<body>
+    <div class="layout-wrapper">
+        <aside class="sidebar">
+            <button id="sidebar-new-game-btn" class="sidebar-btn">Start New Game</button>
+            <nav>
+                <ul>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#">How to Play</a></li>
+                    <li><a href="#">About</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <h1 class="math-title">Tug of War: Math Game</h1>
+            <div id="math-current-team" class="math-current-team"></div>
+            <section id="game-area">
+                <div id="mode-select" class="skribbl-form">
+                    <div class="skribbl-form-header">How do you want to play?</div>
+                    <div style="text-align:center; margin-bottom:1rem;">
+                        <button type="button" id="same-device-btn">Same Device</button>
+                        <button type="button" id="diff-device-btn">Different Devices</button>
+                    </div>
+                </div>
+                <form id="team-form" class="skribbl-form" style="display:none;">
+                    <div class="skribbl-form-header">Customize Teams</div>
+                    <div id="form-error" class="skribbl-form-error" style="display:none;"></div>
+                    <div class="skribbl-form-teams">
+                        <div class="skribbl-form-team-card">
+                            <label for="team1-name">Team 1 Name</label>
+                            <input type="text" id="team1-name" name="team1-name" maxlength="16" required placeholder="Team 1">
+                            <div id="team1-players"></div>
+                        </div>
+                        <div class="skribbl-form-team-card">
+                            <label for="team2-name">Team 2 Name</label>
+                            <input type="text" id="team2-name" name="team2-name" maxlength="16" required placeholder="Team 2">
+                            <div id="team2-players"></div>
+                        </div>
+                    </div>
+                    <div class="skribbl-form-footer">
+                        <button type="submit">Start Game</button>
+                    </div>
+                </form>
+                <div id="game-math-stack">
+                    <div class="rope-labels-row">
+                        <span id="rope-team1-label" class="rope-team-label left">Team 1</span>
+                        <span id="rope-team2-label" class="rope-team-label right">Team 2</span>
+                    </div>
+                    <svg id="rope" viewBox="0 0 600 60" width="100%" height="60" style="display:block;margin:0 auto 18px auto;max-width:900px;">
+                        <g id="rope-group">
+                            <rect x="0" y="25" width="600" height="14" rx="7" fill="#c2a05a" stroke="#8b6f3b" stroke-width="4" />
+                            <!-- Center marker -->
+                            <rect x="295" y="15" width="10" height="30" rx="4" fill="#e74c3c" />
+                        </g>
+                    </svg>
+                    <canvas id="game-canvas" width="500" height="350"></canvas>
+                    <div id="answer-area" class="answer-area" style="display:none;">
+                        <label for="answer-input" class="answer-label">Answer</label>
+                        <div id="answer-result" class="answer-result" style="display:none;">
+                            <span id="answer-submitted"></span>
+                            <span id="answer-sign"></span>
+                        </div>
+                        <input id="answer-input" type="text" autocomplete="off" placeholder="Type your answer..." />
+                        <button id="submit-answer-btn">Submit</button>
+                    </div>
+                </div>
+                <audio id="tick-audio" src="static/js/tick.mp3" preload="auto"></audio>
+                <audio id="clap-audio" src="static/js/clap.mp3" preload="auto"></audio>
+                <audio id="aw-audio" src="static/js/aw.mp3" preload="auto"></audio>
+                <audio id="rope-move-audio" src="static/js/rope-move.mp3" preload="auto"></audio>
+                <div class="game-btn-row">
+                    <button id="new-game-btn" style="display:none;">Start New Game</button>
+                </div>
+            </section>
+        </main>
+        <aside class="hero-section">
+            <header class="hero">
+                <div class="hero-bar">
+                    <h1>Tug of War: Math Game</h1>
+                    <button id="home-btn" title="Settings & Home">
+                        <span class="icon-home">🏠</span>
+                    </button>
+                </div>
+                <p>Test your math skills and win the tug of war!</p>
+                <div class="team-cards">
+                    <div class="team-card" id="team1-card">
+                        <div class="team-name" id="hero-team1-name">Team 1</div>
+                        <div class="team-score" id="hero-team1-score">0</div>
+                        <div class="team-timer" id="hero-team1-timer">2:30</div>
+                    </div>
+                    <div class="vs-label">VS</div>
+                    <div class="team-card" id="team2-card">
+                        <div class="team-name" id="hero-team2-name">Team 2</div>
+                        <div class="team-score" id="hero-team2-score">0</div>
+                        <div class="team-timer" id="hero-team2-timer">2:30</div>
+                    </div>
+                </div>
+                <div id="hero-current-team">Current: Team 1</div>
+                <div id="hero-first-to">First to 60 points wins!</div>
+            </header>
+        </aside>
+    </div>
+    <footer>
+        <p>&copy; 2026 Tug of War Math Game. All rights reserved.</p>
+    </footer>
+    <!-- Removed Three.js CDN -->
+    <script type="module" src="static/js/script.js"></script>
+</body>
+</html>
