@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function describeLobbyError(error, fallbackMessage) {
     const errorCode = error?.code || '';
-    if (errorCode === 'auth/operation-not-allowed') {
+    if (errorCode === 'auth/operation-not-allowed' || errorCode === 'auth/admin-restricted-operation') {
       return 'Firebase anonymous sign-in is disabled. Enable Anonymous auth in Firebase Authentication.';
     }
     if (errorCode === 'auth/unauthorized-domain') {
