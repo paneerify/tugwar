@@ -19,6 +19,10 @@ export const gameState = {
     gameActive: false,
     tiebreakerActive: false,
     tiebreakerAnswered: [false, false],
+    questionAttemptedBy: [false, false],
+    revealedAnswer: null,
+    revealAnswerTimeLeft: 0,
+    pendingNextTeam: null,
     playMode: null,
     selectedTeam: null
 };
@@ -41,6 +45,10 @@ export function resetGameState() {
     gameState.gameActive = false;
     gameState.tiebreakerActive = false;
     gameState.tiebreakerAnswered = [false, false];
+    gameState.questionAttemptedBy = [false, false];
+    gameState.revealedAnswer = null;
+    gameState.revealAnswerTimeLeft = 0;
+    gameState.pendingNextTeam = null;
     gameState.playMode = null;
     gameState.selectedTeam = null;
 }

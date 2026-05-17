@@ -1,6 +1,3 @@
-// Track last question and wrong answer state
-let lastQuestion = null;
-let wrongStreak = 0;
 import { getTeam1PlayersDiv, getTeam2PlayersDiv, getTeamForm, getGameCanvas, getModeSelectDiv, showFormError, hideFormError } from './modules/dom.js';
 import { gameState, POINTS_TO_WIN } from './modules/gameState.js';
 import { createPlayerInputs, setRopePosition } from './modules/ui.js';
@@ -97,16 +94,13 @@ function startGame() {
     if (gameState.gameTimer) clearInterval(gameState.gameTimer);
     gameState.currentTeam = 0;
     gameState.gameTimer = setInterval(() => {
-      for (let t = 0; t < 2; t++) {
-        if (gameState.teamTimeLeft[t] > 0) {
-          gameState.teamTimeLeft[t]--;
-          if (gameState.teamTimeLeft[t] <= 0) {
-            gameState.teamTimeLeft[t] = 0;
-            endGame();
-          }
-        }
+      const nextState = tickGameSnapshot(gameState);
+      applyGameSnapshot(nextState);
+      if (!gameState.gameActive) {
+        clearInterval(gameState.gameTimer);
+        gameState.gameTimer = null;
       }
-      drawGame();
+      drawGame(!gameState.gameActive);
     }, 1000);
     nextQuestion(gameState.currentTeam);
     drawGame();
@@ -116,34 +110,6 @@ function startGame() {
     const answerInput = document.getElementById('answer-input');
     if (answerInput) answerInput.value = '';
 
-    // Alternate teams after every answer
-    const answerInputElem = document.getElementById('answer-input');
-    const submitAnswerBtn = document.getElementById('submit-answer-btn');
-    function alternateSubmit() {
-      if (!gameState.gameActive) return;
-      if (!answerInputElem) return;
-      const ans = answerInputElem.value.trim();
-      if (ans === '') return;
-      const teamIdx = gameState.currentTeam;
-      const questionObj = gameState.currentQuestion[teamIdx];
-      const correctAns = questionObj?.ans;
-      const correct = (ans !== null && String(ans).trim() === String(correctAns));
-      playFeedbackSound(correct ? 'clap' : 'aw');
-      handleAnswer(ans);
-      answerInputElem.value = '';
-      answerInputElem.focus();
-      drawGame();
-    }
-    if (submitAnswerBtn) {
-      submitAnswerBtn.onclick = alternateSubmit;
-    }
-    if (answerInputElem) {
-      answerInputElem.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          alternateSubmit();
-        }
-      });
-    }
   } else if (gameState.playMode === 'diff') {
     const t = gameState.selectedTeam;
     const teamNameInput = document.getElementById(t === 0 ? 'team1-name' : 'team2-name');
@@ -199,70 +165,87 @@ document.addEventListener('DOMContentLoaded', function() {
     const answerArea = document.getElementById('answer-area');
     const answerInput = document.getElementById('answer-input');
     const submitAnswerBtn = document.getElementById('submit-answer-btn');
-    async function submitAnswer() {
+    const answerResult = document.getElementById('answer-result');
+    const answerSubmitted = document.getElementById('answer-submitted');
+    const answerSign = document.getElementById('answer-sign');
+    const quickAnswerControls = document.getElementById('quick-answer-controls');
+    const team1QuickAnswerBtn = document.getElementById('team1-quick-answer-btn');
+    const team2QuickAnswerBtn = document.getElementById('team2-quick-answer-btn');
+    let answerResultTimer = null;
+
+    function showAnswerResult(message, signText = '', signClass = '') {
+      if (!answerResult || !answerSubmitted || !answerSign) return;
+      if (answerResultTimer) {
+        clearTimeout(answerResultTimer);
+        answerResultTimer = null;
+      }
+      answerResult.style.display = 'block';
+      answerSubmitted.textContent = message;
+      answerSign.textContent = signText;
+      answerSign.className = signClass;
+    }
+
+    function hideAnswerResult() {
+      if (!answerResult) return;
+      if (answerResultTimer) {
+        clearTimeout(answerResultTimer);
+        answerResultTimer = null;
+      }
+      answerResult.style.display = 'none';
+      if (answerSubmitted) answerSubmitted.textContent = '';
+      if (answerSign) {
+        answerSign.textContent = '';
+        answerSign.className = '';
+      }
+    }
+
+    function updateAnswerControls() {
+      if (!answerInput || !submitAnswerBtn || !quickAnswerControls) return;
+      const isSameDeviceQuickRound = gameState.playMode === 'same' && gameState.tiebreakerActive;
+      quickAnswerControls.style.display = isSameDeviceQuickRound ? 'flex' : 'none';
+      submitAnswerBtn.style.display = isSameDeviceQuickRound ? 'none' : '';
+      if (gameState.revealedAnswer) {
+        showAnswerResult(`Correct answer: ${gameState.revealedAnswer.answer}`);
+      }
+      if (!gameState.revealedAnswer && !gameState.tiebreakerActive && answerResult && answerResult.textContent.startsWith('Correct answer:')) {
+        hideAnswerResult();
+      }
+      if (gameState.playMode === 'same') {
+        answerInput.disabled = false;
+        answerInput.placeholder = gameState.tiebreakerActive ? 'Type the answer, then choose the team below...' : 'Type your answer...';
+      }
+    }
+
+    async function submitAnswer(teamOverride = null) {
       if (!gameState.gameActive) return;
       if (!answerInput) return;
       const ans = answerInput.value.trim();
       if (ans === '') return;
       if (gameState.playMode === 'diff') {
-        const isCorrect = String(ans).trim() === String(gameState.currentQuestion[gameState.currentTeam]?.ans);
+        const answeringTeam = gameState.selectedTeam;
+        const isCorrect = String(ans).trim() === String(gameState.currentQuestion[answeringTeam]?.ans || gameState.currentQuestion[0]?.ans);
         playFeedbackSound(isCorrect ? 'clap' : 'aw');
         await submitMultiplayerAnswer(ans);
         answerInput.value = '';
         answerInput.blur();
         return;
       }
-      // Determine if answer is correct before handling
-      const teamIdx = gameState.currentTeam;
+      const teamIdx = gameState.tiebreakerActive ? teamOverride : gameState.currentTeam;
+      if (teamIdx === null || teamIdx === undefined) return;
       const questionObj = gameState.currentQuestion[teamIdx];
       const correctAns = questionObj?.ans;
       const correct = (ans !== null && String(ans).trim() === String(correctAns));
       playFeedbackSound(correct ? 'clap' : 'aw');
-      // Show answer result
-      const answerResult = document.getElementById('answer-result');
-      const answerSubmitted = document.getElementById('answer-submitted');
-      const answerSign = document.getElementById('answer-sign');
-      if (answerResult && answerSubmitted && answerSign) {
-        answerResult.style.display = 'block';
-        answerSubmitted.textContent = `You answered: ${ans}`;
-        answerSign.textContent = correct ? '✔' : '✖';
-        answerSign.className = correct ? 'correct' : 'wrong';
-      }
-      // Track wrong streak for this question
-      if (!lastQuestion || lastQuestion !== questionObj?.q) {
-        lastQuestion = questionObj?.q;
-        wrongStreak = 0;
-      }
-      if (!correct) {
-        wrongStreak++;
-      } else {
-        wrongStreak = 0;
-      }
-      handleAnswer(ans);
+      showAnswerResult(`You answered: ${ans}`, correct ? '✔' : '✖', correct ? 'correct' : 'wrong');
+      handleAnswer(ans, teamIdx);
       answerInput.value = '';
       answerInput.focus();
-      // If both teams got it wrong, show correct answer and then give new question to next team
-      if (answerResult && !correct && wrongStreak >= 2) {
-        setTimeout(() => {
-          answerResult.style.display = 'block';
-          answerSubmitted.textContent = `Correct answer: ${correctAns}`;
-          answerSign.textContent = '';
-          answerSign.className = '';
-        }, 1200);
-        setTimeout(() => {
-          answerResult.style.display = 'none';
-          // Give new question to next team and update current team
-          wrongStreak = 0;
-          lastQuestion = null;
-          // Switch to next team for new question
-          gameState.currentTeam = 1 - gameState.currentTeam;
-          const nextTeam = gameState.currentTeam;
-          if (gameState.teamTimeLeft[nextTeam] > 0) {
-            nextQuestion(nextTeam);
+      if (!gameState.revealedAnswer) {
+        answerResultTimer = setTimeout(() => {
+          if (!gameState.revealedAnswer) {
+            hideAnswerResult();
           }
-        }, 3000);
-      } else if (answerResult) {
-        setTimeout(() => { answerResult.style.display = 'none'; }, 1200);
+        }, 1200);
       }
     }
     if (submitAnswerBtn) {
@@ -273,6 +256,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Enter') {
           submitAnswer();
         }
+      });
+    }
+    if (team1QuickAnswerBtn) {
+      team1QuickAnswerBtn.addEventListener('click', function() {
+        submitAnswer(0);
+      });
+    }
+    if (team2QuickAnswerBtn) {
+      team2QuickAnswerBtn.addEventListener('click', function() {
+        submitAnswer(1);
       });
     }
   // HERO SECTION TEAM/TIMER UPDATE
@@ -291,10 +284,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update math section current team display
         const mathCurrentTeam = document.getElementById('math-current-team');
         if (mathCurrentTeam) {
-          const teamIdx = gameState.currentTeam;
-          mathCurrentTeam.textContent = `Current: ${gameState.teamNames[teamIdx] || 'Team ' + (teamIdx+1)}`;
-          mathCurrentTeam.classList.remove('team1', 'team2');
-          mathCurrentTeam.classList.add(teamIdx === 0 ? 'team1' : 'team2');
+          if (gameState.tiebreakerActive) {
+            mathCurrentTeam.textContent = 'Quick Answer Round';
+            mathCurrentTeam.classList.remove('team1', 'team2');
+          } else if (gameState.revealedAnswer) {
+            mathCurrentTeam.textContent = 'Answer Reveal';
+            mathCurrentTeam.classList.remove('team1', 'team2');
+          } else {
+            const teamIdx = gameState.currentTeam;
+            mathCurrentTeam.textContent = `Current: ${gameState.teamNames[teamIdx] || 'Team ' + (teamIdx+1)}`;
+            mathCurrentTeam.classList.remove('team1', 'team2');
+            mathCurrentTeam.classList.add(teamIdx === 0 ? 'team1' : 'team2');
+          }
         }
     if (heroTeam1Name) heroTeam1Name.textContent = gameState.teamNames[0] || 'Team 1';
     if (heroTeam2Name) heroTeam2Name.textContent = gameState.teamNames[1] || 'Team 2';
@@ -307,8 +308,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update current team display
     const heroCurrentTeam = document.getElementById('hero-current-team');
     if (heroCurrentTeam) {
-      const teamIdx = gameState.currentTeam;
-      heroCurrentTeam.textContent = `Current: ${gameState.teamNames[teamIdx] || 'Team ' + (teamIdx+1)}`;
+      if (gameState.tiebreakerActive) {
+        heroCurrentTeam.textContent = 'Quick Answer Round';
+      } else if (gameState.revealedAnswer) {
+        heroCurrentTeam.textContent = 'Answer Reveal';
+      } else {
+        const teamIdx = gameState.currentTeam;
+        heroCurrentTeam.textContent = `Current: ${gameState.teamNames[teamIdx] || 'Team ' + (teamIdx+1)}`;
+      }
     }
   }
 
@@ -319,6 +326,9 @@ document.addEventListener('DOMContentLoaded', function() {
   window.drawGame = function(gameOver) {
     origDrawGame(gameOver);
     updateHeroSection();
+    if (typeof updateAnswerControls === 'function') {
+      updateAnswerControls();
+    }
     // Animate rope position based on score difference
     if (typeof setRopePosition === 'function' && gameState.teamScores) {
       // Calculate position: -1 (team 1 winning big), 1 (team 2 winning big), 0 (tie)
@@ -489,10 +499,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     answerArea.style.display = currentSessionState.game.gameActive ? '' : 'none';
-    const isMyTurn = currentSessionState.game.gameActive && currentSessionState.game.currentTeam === gameState.selectedTeam;
+    const isMyTurn = currentSessionState.game.gameActive && (currentSessionState.game.tiebreakerActive || currentSessionState.game.currentTeam === gameState.selectedTeam);
     answerInput.disabled = !isMyTurn;
     submitBtn.disabled = !isMyTurn;
-    answerInput.placeholder = isMyTurn ? 'Type your answer...' : 'Waiting for the other team...';
+    answerInput.placeholder = currentSessionState.game.tiebreakerActive
+      ? 'Quick answer round: answer fast!'
+      : (isMyTurn ? 'Type your answer...' : 'Waiting for the other team...');
   }
 
   function applySessionState(sessionState) {
@@ -590,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!currentSessionId || !currentSessionState?.game?.gameActive) {
       return;
     }
-    if (currentSessionState.game.currentTeam !== gameState.selectedTeam) {
+    if (!currentSessionState.game.tiebreakerActive && currentSessionState.game.currentTeam !== gameState.selectedTeam) {
       return;
     }
 
@@ -598,10 +610,10 @@ document.addEventListener('DOMContentLoaded', function() {
       if (sessionState.status !== 'active' || !sessionState.game?.gameActive) {
         return sessionState;
       }
-      if (sessionState.game.currentTeam !== gameState.selectedTeam) {
+      if (!sessionState.game.tiebreakerActive && sessionState.game.currentTeam !== gameState.selectedTeam) {
         return sessionState;
       }
-      const nextGame = resolveSubmittedAnswer(sessionState.game, answerValue);
+      const nextGame = resolveSubmittedAnswer(sessionState.game, answerValue, gameState.selectedTeam);
       return {
         ...sessionState,
         status: nextGame.gameActive ? 'active' : 'finished',

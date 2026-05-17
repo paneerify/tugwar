@@ -298,6 +298,18 @@
 	background: linear-gradient(90deg, #43a047 0%, #1976d2 100%);
 	color: #fffde7;
 }
+.quick-answer-controls {
+	display: flex;
+	gap: 0.8rem;
+	width: 100%;
+	max-width: 520px;
+	justify-content: center;
+	flex-wrap: wrap;
+}
+.quick-answer-controls button {
+	flex: 1 1 220px;
+	max-width: 250px;
+}
 .sidebar-btn {
 	width: 100%;
 	margin-bottom: 1.5em;
