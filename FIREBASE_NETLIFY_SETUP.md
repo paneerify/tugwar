@@ -30,13 +30,6 @@ This means registering your Tug of War website with Firebase. It does not mean F
 
 Your current values are:
 
-```js
-apiKey: "AIzaSyDZMyaitX5nE2Y3IiuDj7L4YR38Z94AVfY",
-authDomain: "tugwar-565e2.firebaseapp.com",
-databaseURL: "https://tugwar-565e2-default-rtdb.firebaseio.com/",
-projectId: "tugwar-565e2",
-appId: "1:449035288621:web:ddd1e539ff7fa6f192f8a4"
-```
 
 ## 3. Enable Realtime Database
 
@@ -98,13 +91,15 @@ You have two options.
 
 ```js
 window.__TUGWAR_FIREBASE__ = {
-  apiKey: "AIzaSyDZMyaitX5nE2Y3IiuDj7L4YR38Z94AVfY",
-  authDomain: "tugwar-565e2.firebaseapp.com",
-  databaseURL: "https://tugwar-565e2-default-rtdb.firebaseio.com/",
-  projectId: "tugwar-565e2",
-  appId: "1:449035288621:web:ddd1e539ff7fa6f192f8a4"
+  apiKey: "YOUR_FIREBASE_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com/",
+  projectId: "YOUR_PROJECT_ID",
+  appId: "YOUR_FIREBASE_APP_ID"
 };
 ```
+
+Do not commit your real values to git. This file is generated for local testing and Netlify deploys.
 
 Then open the site and test `Different Devices` in two browser windows.
 
@@ -141,14 +136,14 @@ In Netlify:
 2. Go to `Site configuration` -> `Environment variables`.
 3. Click `Add a variable`.
 4. Add all five variables one by one.
-5. Use these values:
+5. Use your Firebase project values:
 
 ```text
-TUGWAR_FIREBASE_API_KEY=AIzaSyDZMyaitX5nE2Y3IiuDj7L4YR38Z94AVfY
-TUGWAR_FIREBASE_AUTH_DOMAIN=tugwar-565e2.firebaseapp.com
-TUGWAR_FIREBASE_DATABASE_URL=https://tugwar-565e2-default-rtdb.firebaseio.com/
-TUGWAR_FIREBASE_PROJECT_ID=tugwar-565e2
-TUGWAR_FIREBASE_APP_ID=1:449035288621:web:ddd1e539ff7fa6f192f8a4
+TUGWAR_FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY
+TUGWAR_FIREBASE_AUTH_DOMAIN=YOUR_PROJECT.firebaseapp.com
+TUGWAR_FIREBASE_DATABASE_URL=https://YOUR_PROJECT-default-rtdb.firebaseio.com/
+TUGWAR_FIREBASE_PROJECT_ID=YOUR_PROJECT_ID
+TUGWAR_FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID
 ```
 
 6. Trigger a redeploy.
@@ -168,6 +163,7 @@ That command writes `static/js/firebaseRuntimeConfig.js` with your Firebase valu
 - Firebase web config values are safe to ship to the browser. They are not secret keys.
 - Security must come from Firebase Auth and Realtime Database rules.
 - The current implementation syncs lobby state and shared match state through Firebase.
+- Do not keep real Firebase values committed in repo files if your host or scanner flags them; prefer Netlify environment variables and the generated runtime config file.
 - If you want stronger anti-cheat or authoritative gameplay, move game-state mutation into a server function later.
 
 ## 9. Quick test checklist
