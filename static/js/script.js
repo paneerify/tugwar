@@ -402,6 +402,26 @@ document.addEventListener('DOMContentLoaded', function() {
     lobbyStatus.classList.toggle('visible', Boolean(message));
   }
 
+  function describeLobbyError(error, fallbackMessage) {
+    const errorCode = error?.code || '';
+    if (errorCode === 'auth/operation-not-allowed') {
+      return 'Firebase anonymous sign-in is disabled. Enable Anonymous auth in Firebase Authentication.';
+    }
+    if (errorCode === 'auth/unauthorized-domain') {
+      return 'This site domain is not authorized in Firebase Authentication. Add the current domain under Authentication > Settings > Authorized domains.';
+    }
+    if (errorCode === 'PERMISSION_DENIED' || errorCode === 'permission-denied' || errorCode === 'database/permission-denied') {
+      return 'Firebase Database denied access. Publish the Realtime Database rules and make sure anonymous auth is enabled.';
+    }
+    if (errorCode === 'auth/network-request-failed') {
+      return 'Firebase auth request failed. Check your internet connection and Firebase project settings.';
+    }
+    if (error?.message) {
+      return `${fallbackMessage} ${error.message}`;
+    }
+    return fallbackMessage;
+  }
+
   function setLobbyBackendIndicator() {
     if (!lobbyBackendIndicator) return;
     lobbyBackendIndicator.textContent = `Lobby backend: ${getMultiplayerBackendLabel()}`;
@@ -419,8 +439,13 @@ document.addEventListener('DOMContentLoaded', function() {
       setCurrentLobbyTeamId(null);
       return;
     }
-    currentLobbyState = await removeLobbyTeam(currentTeam.id);
-    setCurrentLobbyTeamId(null);
+    try {
+      currentLobbyState = await removeLobbyTeam(currentTeam.id);
+      setCurrentLobbyTeamId(null);
+    } catch (error) {
+      setLobbyStatus(describeLobbyError(error, 'Could not remove your team from the lobby.'));
+      throw error;
+    }
   }
 
   function stopHostTicker() {
@@ -532,9 +557,14 @@ document.addEventListener('DOMContentLoaded', function() {
       applySessionState(sessionState);
       startHostTickerIfNeeded();
     });
-    const snapshot = await getSessionSnapshot(sessionId);
-    applySessionState(snapshot);
-    startHostTickerIfNeeded();
+    try {
+      const snapshot = await getSessionSnapshot(sessionId);
+      applySessionState(snapshot);
+      startHostTickerIfNeeded();
+    } catch (error) {
+      setLobbyStatus(describeLobbyError(error, 'Could not load the shared match session.'));
+      throw error;
+    }
   }
 
   async function ensureSessionStarted(sessionId) {
@@ -691,9 +721,17 @@ document.addEventListener('DOMContentLoaded', function() {
       setCurrentLobbyTeamId(teamToSave.id);
     }
 
-    currentLobbyState = await saveLobbyTeam(teamToSave);
-    setLobbyStatus('Your team is in the lobby and waiting for an opponent.');
-    renderLobby();
+    try {
+      currentLobbyState = await saveLobbyTeam(teamToSave);
+      setLobbyStatus('Your team is in the lobby and waiting for an opponent.');
+      renderLobby();
+    } catch (error) {
+      if (!currentTeam) {
+        setCurrentLobbyTeamId(null);
+      }
+      setLobbyStatus(describeLobbyError(error, 'Could not save your team to Firebase.'));
+      console.error('Failed to save lobby team:', error);
+    }
   }
 
   async function selectOpponentTeam(opponentId) {
@@ -717,7 +755,13 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    currentLobbyState = await matchLobbyTeams(currentTeam.id, opponentTeam.id);
+    try {
+      currentLobbyState = await matchLobbyTeams(currentTeam.id, opponentTeam.id);
+    } catch (error) {
+      setLobbyStatus(describeLobbyError(error, 'Could not match teams in Firebase.'));
+      console.error('Failed to match teams:', error);
+      return;
+    }
     const matchedOpponent = currentLobbyState.teams.find((team) => team.id === opponentTeam.id);
     if (!matchedOpponent || matchedOpponent.status !== 'matched') {
       setLobbyStatus('That team was just selected by someone else. Pick another waiting team.');
@@ -818,6 +862,9 @@ document.addEventListener('DOMContentLoaded', function() {
     getLobbySnapshot().then((lobbyState) => {
       currentLobbyState = lobbyState;
       renderLobby();
+    }).catch((error) => {
+      setLobbyStatus(describeLobbyError(error, 'Could not read the Firebase lobby.'));
+      console.error('Failed to fetch lobby snapshot:', error);
     });
     renderLobby();
   }
