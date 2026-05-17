@@ -31,6 +31,35 @@
                         <button type="button" id="diff-device-btn">Different Devices</button>
                     </div>
                 </div>
+                <section id="lobby-panel" class="skribbl-form lobby-panel" style="display:none;">
+                    <div class="skribbl-form-header">Lobby</div>
+                    <p class="lobby-intro">Create a team, wait for an opponent, or join a waiting team.</p>
+                    <div class="lobby-setup-row">
+                        <label class="lobby-field" for="lobby-team-name">
+                            <span>Team name</span>
+                            <input type="text" id="lobby-team-name" maxlength="16" placeholder="Enter your team name" />
+                        </label>
+                        <button type="button" id="create-lobby-team-btn">Create Team</button>
+                    </div>
+                    <div id="lobby-status" class="lobby-status" aria-live="polite"></div>
+                    <div class="lobby-columns">
+                        <section class="lobby-column">
+                            <h2>Your Team</h2>
+                            <div id="lobby-my-team" class="lobby-card-list lobby-card-list-single">
+                                <p class="lobby-empty">No team created yet.</p>
+                            </div>
+                        </section>
+                        <section class="lobby-column">
+                            <h2>Teams Waiting For Opponent</h2>
+                            <div id="lobby-teams-list" class="lobby-card-list">
+                                <p class="lobby-empty">No teams are waiting right now.</p>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="skribbl-form-footer lobby-footer">
+                        <button type="button" id="back-to-mode-btn" class="lobby-secondary-btn">Back</button>
+                    </div>
+                </section>
                 <form id="team-form" class="skribbl-form" style="display:none;">
                     <div class="skribbl-form-header">Customize Teams</div>
                     <div id="form-error" class="skribbl-form-error" style="display:none;"></div>
@@ -113,6 +142,7 @@
         <p>&copy; 2026 Tug of War Math Game. All rights reserved.</p>
     </footer>
     <!-- Removed Three.js CDN -->
+    <script src="static/js/firebaseRuntimeConfig.js"></script>
     <script type="module" src="static/js/script.js"></script>
 </body>
 </html>
