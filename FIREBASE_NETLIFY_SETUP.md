@@ -56,6 +56,21 @@ appId: "1:449035288621:web:ddd1e539ff7fa6f192f8a4"
 4. Enable `Anonymous`.
 5. Click `Save`.
 
+## 4.1 Add authorized domains
+
+Firebase Auth also needs to trust the domain where you open the app.
+
+1. Open `Build` -> `Authentication`.
+2. Open the `Settings` tab.
+3. Find `Authorized domains`.
+4. Make sure these are added if you use them:
+  - `localhost`
+  - `127.0.0.1`
+  - your Netlify domain, for example `your-site-name.netlify.app`
+  - your custom domain, if you use one
+
+If the domain is missing, anonymous sign-in can fail and cross-browser Firebase sync will not work.
+
 ## 5. Set Realtime Database rules
 
 Use these rules for this app's current client-side sync model:
@@ -157,6 +172,13 @@ That command writes `static/js/firebaseRuntimeConfig.js` with your Firebase valu
 
 ## 9. Quick test checklist
 
+Before testing, make sure both browsers open the same site origin.
+
+- Good: both use `http://localhost:5500`
+- Good: both use the same Netlify URL
+- Bad: one uses `localhost` and the other uses `127.0.0.1`
+- Bad: opening `index.html` directly with `file://`
+
 1. Open the app in browser A.
 2. Open the app in browser B.
 3. In both, click `Different Devices`.
@@ -167,3 +189,19 @@ That command writes `static/js/firebaseRuntimeConfig.js` with your Firebase valu
 8. Enter player names and start the match.
 9. Confirm only the active team can answer.
 10. Confirm score and question changes appear on both browsers.
+
+## 10. If it only works in the same browser
+
+That usually means the app is not actually using Firebase for the lobby.
+
+Check these in order:
+
+1. Open `Different Devices` and look at the status message.
+2. If it says `Lobby backend: Local browser storage.`, Firebase config is not active on that page.
+3. If it says `Lobby backend: Firebase Realtime Database.`, then check:
+  - Anonymous Auth is enabled
+  - authorized domains include the exact domain you are testing on
+  - Realtime Database rules were published
+  - both browsers are on the exact same site origin
+4. If you are using Netlify, redeploy after setting environment variables.
+5. After deploy, open `/static/js/firebaseRuntimeConfig.js` on your live site and verify the values are present and not blank.
