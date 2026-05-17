@@ -1,4 +1,4 @@
-import { firebaseConfig, isFirebaseConfigured } from './firebaseConfig.js';
+import { firebaseConfig, isFirebaseConfigured, normalizedDatabaseUrl } from './firebaseConfig.js';
 
 const LOCAL_LOBBY_STORAGE_KEY = 'tugwar-diff-lobby-v1';
 const LOCAL_SESSION_PREFIX = 'tugwar-session-';
@@ -76,7 +76,9 @@ async function getFirebaseApi() {
       import('https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js')
     ]).then(([appModule, databaseModule, authModule]) => {
       const app = appModule.initializeApp(firebaseConfig);
-      const db = databaseModule.getDatabase(app);
+      const db = normalizedDatabaseUrl
+        ? databaseModule.getDatabase(app, normalizedDatabaseUrl)
+        : databaseModule.getDatabase(app);
       const auth = authModule.getAuth(app);
       const authReady = auth.currentUser
         ? Promise.resolve(auth.currentUser)
