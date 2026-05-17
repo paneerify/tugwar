@@ -387,6 +387,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const lobbyTeamNameInput = document.getElementById('lobby-team-name');
   const createLobbyTeamBtn = document.getElementById('create-lobby-team-btn');
   const lobbyStatus = document.getElementById('lobby-status');
+  const lobbyBackendIndicator = document.getElementById('lobby-backend-indicator');
   const lobbyMyTeam = document.getElementById('lobby-my-team');
   const lobbyTeamsList = document.getElementById('lobby-teams-list');
   const backToModeBtn = document.getElementById('back-to-mode-btn');
@@ -399,6 +400,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!lobbyStatus) return;
     lobbyStatus.textContent = message;
     lobbyStatus.classList.toggle('visible', Boolean(message));
+  }
+
+  function setLobbyBackendIndicator() {
+    if (!lobbyBackendIndicator) return;
+    lobbyBackendIndicator.textContent = `Lobby backend: ${getMultiplayerBackendLabel()}`;
   }
 
   function getCurrentLobbyTeam(lobbyState = currentLobbyState) {
@@ -798,6 +804,7 @@ document.addEventListener('DOMContentLoaded', function() {
     gameCanvas.style.display = 'none';
     if (lobbyPanel) lobbyPanel.style.display = '';
     hideFormError();
+    setLobbyBackendIndicator();
     setLobbyStatus(`Lobby backend: ${getMultiplayerBackendLabel()}.`);
     if (stopLobbySubscription) {
       stopLobbySubscription();

@@ -654,6 +654,18 @@
 	color: #546e7a;
 }
 
+.lobby-backend-indicator {
+	margin: 0 0 1rem;
+	padding: 0.65rem 0.9rem;
+	border-radius: 10px;
+	background: #fff8e1;
+	border: 1px solid #ffe082;
+	color: #795548;
+	font-size: 0.95rem;
+	font-weight: 700;
+	text-align: center;
+}
+
 .lobby-setup-row {
 	display: flex;
 	gap: 1rem;
