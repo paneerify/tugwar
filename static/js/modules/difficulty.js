@@ -45,7 +45,7 @@ export function randInt(a, b) {
 }
 
 export const DIFFICULTY = [
-    { name: 'Basic', gen: genBasic, time: 20 },
-    { name: 'Medium', gen: genMedium, time: 30 },
-    { name: 'Advanced', gen: genAdvanced, time: 40 }
+    { name: 'Basic', description: 'Basic Math, Grades 1-4', gen: genBasic, time: 15 },
+    { name: 'Medium', description: 'Intermediate Math, Grades 5-8', gen: genMedium, time: 25 },
+    { name: 'Advanced', description: 'Advanced Math, Grades 9-12', gen: genAdvanced, time: 35 }
 ];

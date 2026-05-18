@@ -70,6 +70,27 @@ function playFeedbackSound(type) {
 }
 import { resetGameState } from './modules/gameState.js';
 
+function setGameBoardVisibilityFallback(visible) {
+  const gameBoard = document.getElementById('game-board');
+  if (!gameBoard) return;
+  gameBoard.style.display = visible ? 'grid' : 'none';
+  gameBoard.classList.toggle('is-idle', !visible);
+}
+
+function updateHeroSectionFallback() {
+  if (typeof window.__tugwarUpdateHeroSection === 'function') {
+    window.__tugwarUpdateHeroSection();
+  }
+}
+
+function setGameBoardVisibleFromStart(visible) {
+  if (typeof window.__tugwarSetGameBoardVisible === 'function') {
+    window.__tugwarSetGameBoardVisible(visible);
+    return;
+  }
+  setGameBoardVisibilityFallback(visible);
+}
+
 function startGame() {
   // Always use fallback values for team names and player names
   if (gameState.playMode === 'same') {
@@ -77,13 +98,13 @@ function startGame() {
     const team2NameInput = document.getElementById('team2-name');
     gameState.teamNames[0] = (team1NameInput && team1NameInput.value) ? team1NameInput.value : 'Team 1';
     gameState.teamNames[1] = (team2NameInput && team2NameInput.value) ? team2NameInput.value : 'Team 2';
-    if (typeof updateHeroSection === 'function') updateHeroSection();
+    updateHeroSectionFallback();
     const team1Players = getTeam1PlayersDiv();
     const team2Players = getTeam2PlayersDiv();
     gameState.playerNames[0] = team1Players ? Array.from(team1Players.querySelectorAll('input')).map((i, idx) => i.value || (idx === 0 ? 'A' : 'B')) : ['A', 'B'];
     gameState.playerNames[1] = team2Players ? Array.from(team2Players.querySelectorAll('input')).map((i, idx) => i.value || (idx === 0 ? 'C' : 'D')) : ['C', 'D'];
     gameState.teamScores[0] = 0; gameState.teamScores[1] = 0;
-    gameState.teamDifficulty[0] = 0; gameState.teamDifficulty[1] = 0;
+    gameState.teamDifficulty[0] = gameState.selectedLevel; gameState.teamDifficulty[1] = gameState.selectedLevel;
     gameState.currentPlayer[0] = 0; gameState.currentPlayer[1] = 0;
     gameState.currentQuestion[0] = null; gameState.currentQuestion[1] = null;
     gameState.currentAnswer[0] = '';
@@ -107,7 +128,7 @@ function startGame() {
     // Show answer input area
     const answerArea = document.getElementById('answer-area');
     if (answerArea) answerArea.style.display = '';
-    setGameBoardVisible(true);
+    setGameBoardVisibleFromStart(true);
     const answerInput = document.getElementById('answer-input');
     if (answerInput) answerInput.value = '';
 
@@ -118,7 +139,7 @@ function startGame() {
     const teamPlayersDiv = t === 0 ? getTeam1PlayersDiv() : getTeam2PlayersDiv();
     gameState.playerNames[t] = teamPlayersDiv ? Array.from(teamPlayersDiv.querySelectorAll('input')).map(i => i.value || 'Player') : ['Player 1', 'Player 2'];
     gameState.teamScores[t] = 0;
-    gameState.teamDifficulty[t] = 0;
+    gameState.teamDifficulty[t] = gameState.selectedLevel;
     gameState.currentPlayer[t] = 0;
     gameState.currentQuestion[t] = null;
     gameState.currentAnswer[t] = '';
@@ -141,7 +162,7 @@ function startGame() {
     // Show answer input area
     const answerArea = document.getElementById('answer-area');
     if (answerArea) answerArea.style.display = '';
-    setGameBoardVisible(true);
+    setGameBoardVisibleFromStart(true);
     const answerInput = document.getElementById('answer-input');
     if (answerInput) answerInput.value = '';
   }
@@ -180,6 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const rulesBtn = document.getElementById('rules-btn');
     const infoBackBtn = document.getElementById('info-back-btn');
     const infoStartBtn = document.getElementById('info-start-btn');
+    const levelSelectSection = document.getElementById('level-select');
     const infoKicker = document.getElementById('info-kicker');
     const infoTitle = document.getElementById('info-title');
     const infoBody = document.getElementById('info-body');
@@ -193,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
         kicker: 'How to Play',
         title: 'How the match flows',
         body: [
-          'Tap Start Game, then choose Same Device or Different Devices.',
+          'Tap Start Game, choose a level, then pick Same Device or Different Devices.',
           'In Same Device mode, set both team names and players, then start the round.',
           'Only the team whose turn it is can answer, and only that team\'s timer is used.',
           'Type the answer into the active calculator display and press the team\'s answer button.',
@@ -305,7 +327,10 @@ document.addEventListener('DOMContentLoaded', function() {
       gameBoard.classList.toggle('is-idle', !visible);
     }
 
+    window.__tugwarSetGameBoardVisible = setGameBoardVisible;
+
     function resetPreGamePanels() {
+      if (levelSelectSection) levelSelectSection.style.display = 'none';
       if (modeSelectDiv) modeSelectDiv.style.display = 'none';
       if (lobbyPanel) lobbyPanel.style.display = 'none';
       if (teamForm) teamForm.style.display = 'none';
@@ -341,7 +366,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showModeSelection() {
       showGameArea();
+      if (levelSelectSection) levelSelectSection.style.display = 'none';
       if (modeSelectDiv) modeSelectDiv.style.display = '';
+      if (lobbyPanel) lobbyPanel.style.display = 'none';
+      if (teamForm) teamForm.style.display = 'none';
+      if (answerArea) answerArea.style.display = 'none';
+      setGameBoardVisible(false);
+    }
+
+    function showLevelSelection() {
+      showGameArea();
+      if (levelSelectSection) levelSelectSection.style.display = '';
+      if (modeSelectDiv) modeSelectDiv.style.display = 'none';
       if (lobbyPanel) lobbyPanel.style.display = 'none';
       if (teamForm) teamForm.style.display = 'none';
       if (answerArea) answerArea.style.display = 'none';
@@ -492,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     if (welcomeStartBtn) {
       welcomeStartBtn.addEventListener('click', function() {
-        showModeSelection();
+        showLevelSelection();
       });
     }
     if (howToPlayBtn) {
@@ -512,9 +548,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (infoStartBtn) {
       infoStartBtn.addEventListener('click', function() {
-        showModeSelection();
+        showLevelSelection();
       });
     }
+
+    document.querySelectorAll('.level-card').forEach((button) => {
+      button.addEventListener('click', function() {
+        gameState.selectedLevel = Number(button.dataset.level || 0);
+        showModeSelection();
+      });
+    });
     if (homeBtn) {
       homeBtn.addEventListener('click', async function() {
         await leaveCurrentLobbyTeam();
@@ -614,6 +657,8 @@ document.addEventListener('DOMContentLoaded', function() {
     team1Card?.classList.toggle('current', gameState.gameActive && !gameState.tiebreakerActive && gameState.currentTeam === 0);
     team2Card?.classList.toggle('current', gameState.gameActive && !gameState.tiebreakerActive && gameState.currentTeam === 1);
   }
+
+  window.__tugwarUpdateHeroSection = updateHeroSection;
 
   // Update hero section every second and after game state changes
   setInterval(updateHeroSection, 1000);
@@ -894,7 +939,8 @@ document.addEventListener('DOMContentLoaded', function() {
         status: 'active',
         game: buildInitialGameSnapshot(
           [team0.name || 'Team 1', team1.name || 'Team 2'],
-          [team0.players || ['Player 1', 'Player 2'], team1.players || ['Player 1', 'Player 2']]
+          [team0.players || ['Player 1', 'Player 2'], team1.players || ['Player 1', 'Player 2']],
+          gameState.selectedLevel
         )
       };
     });

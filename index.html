@@ -42,11 +42,16 @@
                     </div>
                 </div>
                 <div class="welcome-art" aria-hidden="true">
+                    <div class="cover-spine"></div>
                     <div class="orbit orbit-a"></div>
                     <div class="orbit orbit-b"></div>
+                    <div class="cover-disc"></div>
+                    <div class="cover-arc cover-arc-a"></div>
+                    <div class="cover-arc cover-arc-b"></div>
                     <div class="formula-card formula-card-a"></div>
                     <div class="formula-card formula-card-b"></div>
                     <div class="formula-card formula-card-c"></div>
+                    <div class="cover-grid"></div>
                     <div class="nebula-glow"></div>
                 </div>
             </section>
@@ -62,6 +67,27 @@
                 </div>
             </section>
             <section id="game-area" class="game-area" style="display:none;">
+                <section id="level-select" class="skribbl-form level-select-panel" style="display:none;">
+                    <div class="skribbl-form-header">Choose Your Level</div>
+                    <p class="level-select-intro">Pick the level you want for this match before choosing the play mode.</p>
+                    <div class="level-card-grid">
+                        <button type="button" class="level-card" data-level="0">
+                            <span class="level-card-name">Basic Math</span>
+                            <span class="level-card-range">Grades 1-4</span>
+                            <span class="level-card-time">15s per question</span>
+                        </button>
+                        <button type="button" class="level-card" data-level="1">
+                            <span class="level-card-name">Intermediate Math</span>
+                            <span class="level-card-range">Grades 5-8</span>
+                            <span class="level-card-time">25s per question</span>
+                        </button>
+                        <button type="button" class="level-card" data-level="2">
+                            <span class="level-card-name">Advanced Math</span>
+                            <span class="level-card-range">Grades 9-12</span>
+                            <span class="level-card-time">35s per question</span>
+                        </button>
+                    </div>
+                </section>
                 <div id="mode-select" class="skribbl-form">
                     <div class="skribbl-form-header">How do you want to play?</div>
                     <div style="text-align:center; margin-bottom:1rem;">
@@ -171,8 +197,8 @@
                         </div>
                         <div class="tug-scene" aria-label="Tug of war scene">
                             <div class="team-figures left">
-                                <div class="stick-figure pulling"><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
-                                <div class="stick-figure pulling"><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
+                                <div class="stick-figure pulling"><span class="torso"></span><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
+                                <div class="stick-figure pulling"><span class="torso"></span><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
                             </div>
                             <div class="tug-track">
                                 <div class="ground-line"></div>
@@ -183,8 +209,8 @@
                                 </div>
                             </div>
                             <div class="team-figures right">
-                                <div class="stick-figure pulling"><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
-                                <div class="stick-figure pulling"><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
+                                <div class="stick-figure pulling"><span class="torso"></span><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
+                                <div class="stick-figure pulling"><span class="torso"></span><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
                             </div>
                         </div>
                         <div id="answer-result" class="answer-result" style="display:none;">

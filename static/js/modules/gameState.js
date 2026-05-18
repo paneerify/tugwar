@@ -23,6 +23,7 @@ export const gameState = {
     revealedAnswer: null,
     revealAnswerTimeLeft: 0,
     pendingNextTeam: null,
+    selectedLevel: 0,
     playMode: null,
     selectedTeam: null
 };
@@ -49,6 +50,7 @@ export function resetGameState() {
     gameState.revealedAnswer = null;
     gameState.revealAnswerTimeLeft = 0;
     gameState.pendingNextTeam = null;
+    gameState.selectedLevel = 0;
     gameState.playMode = null;
     gameState.selectedTeam = null;
 }

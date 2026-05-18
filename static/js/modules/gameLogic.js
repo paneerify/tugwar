@@ -19,12 +19,20 @@ function cloneGameSnapshot(snapshot) {
         questionAttemptedBy: [...(snapshot.questionAttemptedBy || [false, false])],
         revealedAnswer: snapshot.revealedAnswer ? { ...snapshot.revealedAnswer } : null,
         revealAnswerTimeLeft: snapshot.revealAnswerTimeLeft || 0,
-        pendingNextTeam: snapshot.pendingNextTeam ?? null
+        pendingNextTeam: snapshot.pendingNextTeam ?? null,
+        selectedLevel: snapshot.selectedLevel ?? 0
     };
 }
 
+function resolveDifficultyIndex(snapshot, teamIdx) {
+    if (snapshot.selectedLevel !== null && snapshot.selectedLevel !== undefined) {
+        return snapshot.selectedLevel;
+    }
+    return snapshot.teamDifficulty[teamIdx];
+}
+
 function generateQuestionForTeam(teamIdx, snapshot) {
-    const difficultyIndex = snapshot.teamDifficulty[teamIdx];
+    const difficultyIndex = resolveDifficultyIndex(snapshot, teamIdx);
     return {
         question: DIFFICULTY[difficultyIndex].gen(),
         time: DIFFICULTY[difficultyIndex].time
@@ -62,12 +70,12 @@ function queueAnswerReveal(snapshot, question, nextTeam) {
     return snapshot;
 }
 
-export function buildInitialGameSnapshot(teamNames, playerNames) {
+export function buildInitialGameSnapshot(teamNames, playerNames, selectedLevel = 0) {
     const snapshot = {
         teamNames: [...teamNames],
         playerNames: playerNames.map((team) => [...team]),
         teamScores: [0, 0],
-        teamDifficulty: [0, 0],
+        teamDifficulty: [selectedLevel, selectedLevel],
         currentTeam: 0,
         currentPlayer: [0, 0],
         currentQuestion: [null, null],
@@ -81,6 +89,7 @@ export function buildInitialGameSnapshot(teamNames, playerNames) {
         revealedAnswer: null,
         revealAnswerTimeLeft: 0,
         pendingNextTeam: null,
+        selectedLevel,
         winner: null,
         gameOver: false
     };
@@ -105,6 +114,7 @@ export function applyGameSnapshot(snapshot) {
     gameState.revealedAnswer = snapshot.revealedAnswer ? { ...snapshot.revealedAnswer } : null;
     gameState.revealAnswerTimeLeft = snapshot.revealAnswerTimeLeft || 0;
     gameState.pendingNextTeam = snapshot.pendingNextTeam ?? null;
+    gameState.selectedLevel = snapshot.selectedLevel ?? 0;
 }
 
 export function resolveSubmittedAnswer(snapshot, ans, answeringTeam = snapshot.currentTeam) {
@@ -136,9 +146,6 @@ export function resolveSubmittedAnswer(snapshot, ans, answeringTeam = snapshot.c
 
     if (isCorrect) {
         nextState.teamScores[teamIdx] += 5;
-        if (nextState.teamDifficulty[teamIdx] < 2) {
-            nextState.teamDifficulty[teamIdx] += 1;
-        }
         if (nextState.teamScores[teamIdx] >= POINTS_TO_WIN) {
             nextState.teamTimeLeft[teamIdx] = 0;
             return finishGame(nextState, teamIdx);
@@ -158,7 +165,7 @@ export function resolveSubmittedAnswer(snapshot, ans, answeringTeam = snapshot.c
         nextState.currentQuestion[nextTeam] = nextState.currentQuestion[teamIdx] ? { ...nextState.currentQuestion[teamIdx] } : null;
         nextState.currentQuestion[teamIdx] = null;
         nextState.questionTimeLeft[teamIdx] = 0;
-        nextState.questionTimeLeft[nextTeam] = DIFFICULTY[nextState.teamDifficulty[nextTeam]].time;
+        nextState.questionTimeLeft[nextTeam] = DIFFICULTY[resolveDifficultyIndex(nextState, nextTeam)].time;
     }
 
     if (nextState.teamTimeLeft[0] === 0 && nextState.teamTimeLeft[1] === 0) {
