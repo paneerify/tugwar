@@ -107,6 +107,8 @@ function startGame() {
     // Show answer input area
     const answerArea = document.getElementById('answer-area');
     if (answerArea) answerArea.style.display = '';
+    const gameBoard = document.getElementById('game-board');
+    if (gameBoard) gameBoard.classList.remove('is-idle');
     const answerInput = document.getElementById('answer-input');
     if (answerInput) answerInput.value = '';
 
@@ -140,6 +142,8 @@ function startGame() {
     // Show answer input area
     const answerArea = document.getElementById('answer-area');
     if (answerArea) answerArea.style.display = '';
+    const gameBoard = document.getElementById('game-board');
+    if (gameBoard) gameBoard.classList.remove('is-idle');
     const answerInput = document.getElementById('answer-input');
     if (answerInput) answerInput.value = '';
   }
@@ -171,7 +175,96 @@ document.addEventListener('DOMContentLoaded', function() {
     const quickAnswerControls = document.getElementById('quick-answer-controls');
     const team1QuickAnswerBtn = document.getElementById('team1-quick-answer-btn');
     const team2QuickAnswerBtn = document.getElementById('team2-quick-answer-btn');
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const welcomeStartBtn = document.getElementById('welcome-start-btn');
+    const homeBtn = document.getElementById('home-btn');
+    const gameAreaSection = document.getElementById('game-area');
     let answerResultTimer = null;
+
+    function getTeamDisplay(teamIdx) {
+      return document.getElementById(teamIdx === 0 ? 'team1-answer-display' : 'team2-answer-display');
+    }
+
+    function getEffectiveTeam(teamOverride = null) {
+      if (teamOverride !== null && teamOverride !== undefined) {
+        return teamOverride;
+      }
+      if (gameState.playMode === 'diff') {
+        return gameState.selectedTeam;
+      }
+      return gameState.currentTeam;
+    }
+
+    function syncCalculatorDisplays() {
+      for (let teamIdx = 0; teamIdx < 2; teamIdx++) {
+        const display = getTeamDisplay(teamIdx);
+        if (!display) continue;
+        display.value = gameState.currentAnswer[teamIdx] || '';
+      }
+    }
+
+    function isTeamInteractive(teamIdx) {
+      if (!gameState.gameActive) return false;
+      if (gameState.playMode === 'diff') {
+        return teamIdx === gameState.selectedTeam && (gameState.tiebreakerActive || gameState.currentTeam === teamIdx);
+      }
+      if (gameState.tiebreakerActive) {
+        return !gameState.tiebreakerAnswered[teamIdx];
+      }
+      return gameState.currentTeam === teamIdx;
+    }
+
+    function syncCalculatorUi() {
+      syncCalculatorDisplays();
+      const team1Card = document.getElementById('team1-card');
+      const team2Card = document.getElementById('team2-card');
+      const team1TurnPill = document.getElementById('team1-turn-pill');
+      const team2TurnPill = document.getElementById('team2-turn-pill');
+      const cards = [team1Card, team2Card];
+      const pills = [team1TurnPill, team2TurnPill];
+
+      for (let teamIdx = 0; teamIdx < 2; teamIdx++) {
+        const active = isTeamInteractive(teamIdx);
+        cards[teamIdx]?.classList.toggle('is-active', active);
+        cards[teamIdx]?.classList.toggle('is-disabled', !active);
+        cards[teamIdx]?.classList.toggle('current', !gameState.tiebreakerActive && gameState.currentTeam === teamIdx && gameState.gameActive);
+        if (pills[teamIdx]) {
+          pills[teamIdx].classList.toggle('is-active', active);
+          pills[teamIdx].classList.toggle('is-locked', !active);
+          pills[teamIdx].textContent = !gameState.gameActive
+            ? 'Round complete'
+            : gameState.tiebreakerActive
+              ? (gameState.tiebreakerAnswered[teamIdx] ? 'Answer locked' : 'Quick answer round')
+              : active
+                ? 'Your turn to answer'
+                : 'Waiting for turn';
+        }
+      }
+    }
+
+    function updateCalculatorEntry(teamIdx, nextValue) {
+      gameState.currentAnswer[teamIdx] = nextValue;
+      if (answerInput && teamIdx === getEffectiveTeam(teamIdx)) {
+        answerInput.value = nextValue;
+      }
+      syncCalculatorDisplays();
+    }
+
+    function resetDisplayedAnswers() {
+      gameState.currentAnswer = ['', ''];
+      if (answerInput) answerInput.value = '';
+      syncCalculatorUi();
+    }
+
+    function showWelcomeScreen() {
+      if (welcomeScreen) welcomeScreen.style.display = '';
+      if (gameAreaSection) gameAreaSection.style.display = 'none';
+    }
+
+    function showGameArea() {
+      if (welcomeScreen) welcomeScreen.style.display = 'none';
+      if (gameAreaSection) gameAreaSection.style.display = '';
+    }
 
     function showAnswerResult(message, signText = '', signClass = '') {
       if (!answerResult || !answerSubmitted || !answerSign) return;
@@ -214,11 +307,15 @@ document.addEventListener('DOMContentLoaded', function() {
         answerInput.disabled = false;
         answerInput.placeholder = gameState.tiebreakerActive ? 'Type the answer, then choose the team below...' : 'Type your answer...';
       }
+      syncCalculatorUi();
     }
 
     async function submitAnswer(teamOverride = null) {
       if (!gameState.gameActive) return;
       if (!answerInput) return;
+      const effectiveTeam = getEffectiveTeam(teamOverride);
+      if (effectiveTeam === null || effectiveTeam === undefined) return;
+      answerInput.value = gameState.currentAnswer[effectiveTeam] || '';
       const ans = answerInput.value.trim();
       if (ans === '') return;
       if (gameState.playMode === 'diff') {
@@ -226,7 +323,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const isCorrect = String(ans).trim() === String(gameState.currentQuestion[answeringTeam]?.ans || gameState.currentQuestion[0]?.ans);
         playFeedbackSound(isCorrect ? 'clap' : 'aw');
         await submitMultiplayerAnswer(ans);
+        gameState.currentAnswer[answeringTeam] = '';
         answerInput.value = '';
+        syncCalculatorUi();
         answerInput.blur();
         return;
       }
@@ -238,8 +337,9 @@ document.addEventListener('DOMContentLoaded', function() {
       playFeedbackSound(correct ? 'clap' : 'aw');
       showAnswerResult(`You answered: ${ans}`, correct ? '✔' : '✖', correct ? 'correct' : 'wrong');
       handleAnswer(ans, teamIdx);
+      gameState.currentAnswer[teamIdx] = '';
       answerInput.value = '';
-      answerInput.focus();
+      syncCalculatorUi();
       if (!gameState.revealedAnswer) {
         answerResultTimer = setTimeout(() => {
           if (!gameState.revealedAnswer) {
@@ -268,6 +368,58 @@ document.addEventListener('DOMContentLoaded', function() {
         submitAnswer(1);
       });
     }
+    document.querySelectorAll('.calculator-keypad').forEach((keypad) => {
+      keypad.addEventListener('click', function(event) {
+        const button = event.target.closest('.calc-key');
+        if (!button) return;
+        const teamIdx = Number(keypad.dataset.team);
+        if (!isTeamInteractive(teamIdx)) return;
+        const currentValue = gameState.currentAnswer[teamIdx] || '';
+        const action = button.dataset.action;
+        if (action === 'clear') {
+          updateCalculatorEntry(teamIdx, '');
+          return;
+        }
+        if (action === 'backspace') {
+          updateCalculatorEntry(teamIdx, currentValue.slice(0, -1));
+          return;
+        }
+        const value = button.dataset.value || '';
+        updateCalculatorEntry(teamIdx, `${currentValue}${value}`);
+      });
+    });
+    document.querySelectorAll('.team-submit-btn').forEach((button) => {
+      button.addEventListener('click', function() {
+        submitAnswer(Number(button.dataset.team));
+      });
+    });
+    if (welcomeStartBtn) {
+      welcomeStartBtn.addEventListener('click', function() {
+        showGameArea();
+        if (modeSelectDiv) modeSelectDiv.style.display = '';
+      });
+    }
+    if (homeBtn) {
+      homeBtn.addEventListener('click', async function() {
+        await leaveCurrentLobbyTeam();
+        stopSessionSync();
+        if (stopLobbySubscription) {
+          stopLobbySubscription();
+          stopLobbySubscription = null;
+        }
+        resetGameState();
+        resetDisplayedAnswers();
+        if (modeSelectDiv) modeSelectDiv.style.display = '';
+        if (lobbyPanel) lobbyPanel.style.display = 'none';
+        if (teamForm) teamForm.style.display = 'none';
+        if (gameCanvas) gameCanvas.style.display = 'none';
+        if (newGameBtn) newGameBtn.style.display = 'none';
+        const gameBoard = document.getElementById('game-board');
+        if (gameBoard) gameBoard.classList.add('is-idle');
+        showWelcomeScreen();
+        updateHeroSection();
+      });
+    }
   // HERO SECTION TEAM/TIMER UPDATE
   const heroTeam1Name = document.getElementById('hero-team1-name');
   const heroTeam2Name = document.getElementById('hero-team2-name');
@@ -283,6 +435,10 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateHeroSection() {
         // Update math section current team display
         const mathCurrentTeam = document.getElementById('math-current-team');
+        const questionDisplay = document.getElementById('question-display');
+        const questionTimer = document.getElementById('question-timer');
+        const team1Card = document.getElementById('team1-card');
+        const team2Card = document.getElementById('team2-card');
         if (mathCurrentTeam) {
           if (gameState.tiebreakerActive) {
             mathCurrentTeam.textContent = 'Quick Answer Round';
@@ -297,6 +453,29 @@ document.addEventListener('DOMContentLoaded', function() {
             mathCurrentTeam.classList.add(teamIdx === 0 ? 'team1' : 'team2');
           }
         }
+    const displayTeam = gameState.tiebreakerActive ? 0 : gameState.currentTeam;
+    if (questionDisplay) {
+      if (!gameState.gameActive && gameState.revealedAnswer) {
+        questionDisplay.textContent = `${gameState.revealedAnswer.question} = ${gameState.revealedAnswer.answer}`;
+      } else if (gameState.revealedAnswer) {
+        questionDisplay.textContent = `${gameState.revealedAnswer.question} = ${gameState.revealedAnswer.answer}`;
+      } else if (gameState.currentQuestion[displayTeam]?.q) {
+        questionDisplay.textContent = gameState.currentQuestion[displayTeam].q;
+      } else if (!gameState.gameActive) {
+        const winningTeam = gameState.teamScores[0] === gameState.teamScores[1]
+          ? 'Draw Game'
+          : `${gameState.teamNames[gameState.teamScores[0] > gameState.teamScores[1] ? 0 : 1]} Wins`;
+        questionDisplay.textContent = winningTeam;
+      } else {
+        questionDisplay.textContent = 'Pick a mode to begin.';
+      }
+    }
+    if (questionTimer) {
+      const timeValue = gameState.revealedAnswer
+        ? gameState.revealAnswerTimeLeft
+        : gameState.questionTimeLeft[displayTeam];
+      questionTimer.textContent = `Time Left: ${Number.isFinite(timeValue) ? timeValue : '--'}s`;
+    }
     if (heroTeam1Name) heroTeam1Name.textContent = gameState.teamNames[0] || 'Team 1';
     if (heroTeam2Name) heroTeam2Name.textContent = gameState.teamNames[1] || 'Team 2';
     if (heroTeam1Timer) heroTeam1Timer.textContent = formatTime(gameState.teamTimeLeft[0]);
@@ -317,6 +496,8 @@ document.addEventListener('DOMContentLoaded', function() {
         heroCurrentTeam.textContent = `Current: ${gameState.teamNames[teamIdx] || 'Team ' + (teamIdx+1)}`;
       }
     }
+    team1Card?.classList.toggle('current', gameState.gameActive && !gameState.tiebreakerActive && gameState.currentTeam === 0);
+    team2Card?.classList.toggle('current', gameState.gameActive && !gameState.tiebreakerActive && gameState.currentTeam === 1);
   }
 
   // Update hero section every second and after game state changes
@@ -366,6 +547,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (teamForm) teamForm.style.display = 'none';
         if (gameCanvas) gameCanvas.style.display = 'none';
         if (newGameBtn) newGameBtn.style.display = 'none';
+        resetDisplayedAnswers();
+        const gameBoard = document.getElementById('game-board');
+        if (gameBoard) gameBoard.classList.add('is-idle');
+        showWelcomeScreen();
+        updateHeroSection();
       });
     }
     // Ticking sound for question timer
@@ -520,10 +706,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (lobbyPanel) lobbyPanel.style.display = 'none';
     if (teamForm) teamForm.style.display = 'none';
     if (gameCanvas) {
-      gameCanvas.style.display = 'block';
+      gameCanvas.style.display = 'none';
       gameCanvas.width = 700;
       gameCanvas.height = 400;
     }
+    const gameBoard = document.getElementById('game-board');
+    if (gameBoard) gameBoard.classList.remove('is-idle');
     drawGame(!gameState.gameActive);
     updateDiffAnswerUi();
   }
@@ -894,6 +1082,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Ensure player inputs and team name fields are created before showing the form
       createPlayerInputs(team1PlayersDiv, 'team1');
       createPlayerInputs(team2PlayersDiv, 'team2');
+      if (gameAreaSection) gameAreaSection.style.display = '';
       setTimeout(() => {
         teamForm.style.display = '';
       }, 0);
@@ -977,7 +1166,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         hideFormError();
         teamForm.style.display = 'none';
-        if (gameCanvas) gameCanvas.style.display = 'block';
+        if (gameCanvas) gameCanvas.style.display = 'none';
         const answerArea = document.getElementById('answer-area');
         if (answerArea) answerArea.style.display = '';
         setLobbyStatus('Waiting for the shared match state...');
@@ -990,7 +1179,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       if (lobbyPanel) lobbyPanel.style.display = 'none';
       teamForm.style.display = 'none';
-      gameCanvas.style.display = 'block';
+      gameCanvas.style.display = 'none';
       gameCanvas.width = 700;
       gameCanvas.height = 400;
       startGame();
@@ -1001,12 +1190,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.addEventListener('keydown', function(e) {
     if (!gameState.gameActive) return;
+    const inputTeam = gameState.playMode === 'diff' ? gameState.selectedTeam : gameState.currentTeam;
     if (e.key === 'Backspace') {
-      gameState.currentAnswer[gameState.currentTeam] = gameState.currentAnswer[gameState.currentTeam].slice(0, -1);
+      updateCalculatorEntry(inputTeam, gameState.currentAnswer[inputTeam].slice(0, -1));
     } else if (e.key === 'Enter') {
-      handleAnswer(gameState.currentAnswer[gameState.currentTeam]);
+      submitAnswer(inputTeam);
     } else if (/^[0-9\-]$/.test(e.key)) {
-      gameState.currentAnswer[gameState.currentTeam] += e.key;
+      updateCalculatorEntry(inputTeam, `${gameState.currentAnswer[inputTeam]}${e.key}`);
     }
     drawGame();
   });
@@ -1044,6 +1234,10 @@ document.addEventListener('DOMContentLoaded', function() {
       if (teamForm) teamForm.style.display = 'none';
       if (gameCanvas) gameCanvas.style.display = 'none';
       newGameBtn.style.display = 'none';
+      resetDisplayedAnswers();
+      const gameBoard = document.getElementById('game-board');
+      if (gameBoard) gameBoard.classList.add('is-idle');
+      showWelcomeScreen();
     });
   }
 });

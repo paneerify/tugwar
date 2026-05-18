@@ -4,26 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tug of War Math Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="static/css/style.css">
-    <!-- Roboto Mono font -->
-    <!--<link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700&display=swap" rel="stylesheet">-->
+    <link rel="stylesheet" href="static/css/cosmic.css">
 </head>
 <body>
-    <div class="layout-wrapper">
-        <aside class="sidebar">
-            <button id="sidebar-new-game-btn" class="sidebar-btn">Start New Game</button>
-            <nav>
-                <ul>
-                    <li><a href="#">Home</a></li>
-                    <li><a href="#">How to Play</a></li>
-                    <li><a href="#">About</a></li>
-                </ul>
-            </nav>
-        </aside>
+    <div class="cosmic-app-shell">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">Class IX Cosmic Arena</p>
+                <h1 class="math-title">Tug of War Math Game</h1>
+            </div>
+            <div class="topbar-actions">
+                <button id="sidebar-new-game-btn" class="sidebar-btn">New Game</button>
+                <button id="home-btn" class="home-btn" type="button">Home</button>
+            </div>
+        </header>
         <main class="main-content">
-            <h1 class="math-title">Tug of War: Math Game</h1>
-            <div id="math-current-team" class="math-current-team"></div>
-            <section id="game-area">
+            <section id="welcome-screen" class="welcome-screen cosmic-panel">
+                <div class="welcome-copy">
+                    <p class="welcome-kicker">Press to Start</p>
+                    <h2>Voyage through roots, powers, stars and scores.</h2>
+                    <p>
+                        A same-device round now uses only the active team's clock. Set the teams, tap the calculator keys,
+                        and pull the rope across the galaxy.
+                    </p>
+                    <button id="welcome-start-btn" class="primary-cta" type="button">Start Game</button>
+                </div>
+                <div class="welcome-art" aria-hidden="true">
+                    <div class="orbit orbit-a"></div>
+                    <div class="orbit orbit-b"></div>
+                    <div class="formula-card">sqrt(81) = 9</div>
+                    <div class="formula-card">3^4 = 81</div>
+                    <div class="formula-card">pi, x, y, z</div>
+                    <div class="nebula-glow"></div>
+                </div>
+            </section>
+            <section id="game-area" class="game-area" style="display:none;">
                 <div id="mode-select" class="skribbl-form">
                     <div class="skribbl-form-header">How do you want to play?</div>
                     <div style="text-align:center; margin-bottom:1rem;">
@@ -80,32 +99,124 @@
                         <button type="submit">Start Game</button>
                     </div>
                 </form>
-                <div id="game-math-stack">
-                    <div class="rope-labels-row">
-                        <span id="rope-team1-label" class="rope-team-label left">Team 1</span>
-                        <span id="rope-team2-label" class="rope-team-label right">Team 2</span>
-                    </div>
-                    <svg id="rope" viewBox="0 0 600 60" width="100%" height="60" style="display:block;margin:0 auto 18px auto;max-width:900px;">
-                        <g id="rope-group">
-                            <rect x="0" y="25" width="600" height="14" rx="7" fill="#c2a05a" stroke="#8b6f3b" stroke-width="4" />
-                            <!-- Center marker -->
-                            <rect x="295" y="15" width="10" height="30" rx="4" fill="#e74c3c" />
-                        </g>
-                    </svg>
-                    <canvas id="game-canvas" width="500" height="350"></canvas>
-                    <div id="answer-area" class="answer-area" style="display:none;">
-                        <label for="answer-input" class="answer-label">Answer</label>
+                <section id="game-board" class="game-board is-idle">
+                    <article id="team1-card" class="team-calculator team-card" data-team="0">
+                        <div class="team-panel-header">
+                            <div>
+                                <p class="team-caption">Left Calculator</p>
+                                <div class="team-name" id="hero-team1-name">Team 1</div>
+                            </div>
+                            <div class="team-meta">
+                                <div class="team-score" id="hero-team1-score">0</div>
+                                <div class="team-timer" id="hero-team1-timer">2:30</div>
+                            </div>
+                        </div>
+                        <div class="team-turn-pill" id="team1-turn-pill">Waiting</div>
+                        <div class="calculator-shell">
+                            <label class="calculator-label" for="team1-answer-display">Answer Display</label>
+                            <input id="team1-answer-display" class="calculator-display" type="text" value="" readonly>
+                            <div class="calculator-keypad" data-team="0">
+                                <button type="button" class="calc-key" data-value="7">7</button>
+                                <button type="button" class="calc-key" data-value="8">8</button>
+                                <button type="button" class="calc-key" data-value="9">9</button>
+                                <button type="button" class="calc-key calc-action" data-action="backspace">DEL</button>
+                                <button type="button" class="calc-key" data-value="4">4</button>
+                                <button type="button" class="calc-key" data-value="5">5</button>
+                                <button type="button" class="calc-key" data-value="6">6</button>
+                                <button type="button" class="calc-key calc-action" data-action="clear">C</button>
+                                <button type="button" class="calc-key" data-value="1">1</button>
+                                <button type="button" class="calc-key" data-value="2">2</button>
+                                <button type="button" class="calc-key" data-value="3">3</button>
+                                <button type="button" class="calc-key" data-value="-">-</button>
+                                <button type="button" class="calc-key calc-zero" data-value="0">0</button>
+                            </div>
+                            <button type="button" class="submit-answer-btn team-submit-btn" data-team="0">Lock Team 1 Answer</button>
+                        </div>
+                    </article>
+
+                    <section class="arena-panel cosmic-panel">
+                        <div class="arena-header">
+                            <div id="math-current-team" class="math-current-team"></div>
+                            <div id="hero-current-team" class="hero-current-team">Current: Team 1</div>
+                        </div>
+                        <div class="question-board">
+                            <p class="question-label">Current Challenge</p>
+                            <div id="question-display" class="question-display">Pick a mode to begin.</div>
+                            <div id="question-timer" class="question-timer">Time Left: --</div>
+                            <div id="hero-first-to" class="hero-first-to">First to 60 points wins.</div>
+                        </div>
+                        <div class="rope-labels-row">
+                            <span id="rope-team1-label" class="rope-team-label left">Team 1</span>
+                            <span class="rope-center-label">Galactic Tug</span>
+                            <span id="rope-team2-label" class="rope-team-label right">Team 2</span>
+                        </div>
+                        <div class="tug-scene" aria-label="Tug of war scene">
+                            <div class="team-figures left">
+                                <div class="stick-figure"></div>
+                                <div class="stick-figure"></div>
+                            </div>
+                            <div class="tug-track">
+                                <div class="track-center"></div>
+                                <div id="rope-group" class="rope-group">
+                                    <div class="rope-line"></div>
+                                    <div class="rope-knot"></div>
+                                </div>
+                            </div>
+                            <div class="team-figures right">
+                                <div class="stick-figure"></div>
+                                <div class="stick-figure"></div>
+                            </div>
+                        </div>
                         <div id="answer-result" class="answer-result" style="display:none;">
                             <span id="answer-submitted"></span>
                             <span id="answer-sign"></span>
                         </div>
-                        <input id="answer-input" type="text" autocomplete="off" placeholder="Type your answer..." />
-                        <div id="quick-answer-controls" class="quick-answer-controls" style="display:none;">
-                            <button type="button" id="team1-quick-answer-btn">Team 1 Answers</button>
-                            <button type="button" id="team2-quick-answer-btn">Team 2 Answers</button>
+                    </section>
+
+                    <article id="team2-card" class="team-calculator team-card" data-team="1">
+                        <div class="team-panel-header">
+                            <div>
+                                <p class="team-caption">Right Calculator</p>
+                                <div class="team-name" id="hero-team2-name">Team 2</div>
+                            </div>
+                            <div class="team-meta">
+                                <div class="team-score" id="hero-team2-score">0</div>
+                                <div class="team-timer" id="hero-team2-timer">2:30</div>
+                            </div>
                         </div>
-                        <button id="submit-answer-btn">Submit</button>
+                        <div class="team-turn-pill" id="team2-turn-pill">Waiting</div>
+                        <div class="calculator-shell">
+                            <label class="calculator-label" for="team2-answer-display">Answer Display</label>
+                            <input id="team2-answer-display" class="calculator-display" type="text" value="" readonly>
+                            <div class="calculator-keypad" data-team="1">
+                                <button type="button" class="calc-key" data-value="7">7</button>
+                                <button type="button" class="calc-key" data-value="8">8</button>
+                                <button type="button" class="calc-key" data-value="9">9</button>
+                                <button type="button" class="calc-key calc-action" data-action="backspace">DEL</button>
+                                <button type="button" class="calc-key" data-value="4">4</button>
+                                <button type="button" class="calc-key" data-value="5">5</button>
+                                <button type="button" class="calc-key" data-value="6">6</button>
+                                <button type="button" class="calc-key calc-action" data-action="clear">C</button>
+                                <button type="button" class="calc-key" data-value="1">1</button>
+                                <button type="button" class="calc-key" data-value="2">2</button>
+                                <button type="button" class="calc-key" data-value="3">3</button>
+                                <button type="button" class="calc-key" data-value="-">-</button>
+                                <button type="button" class="calc-key calc-zero" data-value="0">0</button>
+                            </div>
+                            <button type="button" class="submit-answer-btn team-submit-btn" data-team="1">Lock Team 2 Answer</button>
+                        </div>
+                    </article>
+                </section>
+
+                <canvas id="game-canvas" width="500" height="350" style="display:none;"></canvas>
+                <div id="answer-area" class="answer-area" style="display:none;">
+                    <label for="answer-input" class="answer-label">Answer</label>
+                    <input id="answer-input" type="text" autocomplete="off" placeholder="Type your answer..." />
+                    <div id="quick-answer-controls" class="quick-answer-controls" style="display:none;">
+                        <button type="button" id="team1-quick-answer-btn">Team 1 Answers</button>
+                        <button type="button" id="team2-quick-answer-btn">Team 2 Answers</button>
                     </div>
+                    <button id="submit-answer-btn" type="button">Submit</button>
                 </div>
                 <audio id="tick-audio" src="static/js/tick.mp3" preload="auto"></audio>
                 <audio id="clap-audio" src="static/js/clap.mp3" preload="auto"></audio>
@@ -116,37 +227,10 @@
                 </div>
             </section>
         </main>
-        <aside class="hero-section">
-            <header class="hero">
-                <div class="hero-bar">
-                    <h1>Tug of War: Math Game</h1>
-                    <button id="home-btn" title="Settings & Home">
-                        <span class="icon-home">🏠</span>
-                    </button>
-                </div>
-                <p>Test your math skills and win the tug of war!</p>
-                <div class="team-cards">
-                    <div class="team-card" id="team1-card">
-                        <div class="team-name" id="hero-team1-name">Team 1</div>
-                        <div class="team-score" id="hero-team1-score">0</div>
-                        <div class="team-timer" id="hero-team1-timer">2:30</div>
-                    </div>
-                    <div class="vs-label">VS</div>
-                    <div class="team-card" id="team2-card">
-                        <div class="team-name" id="hero-team2-name">Team 2</div>
-                        <div class="team-score" id="hero-team2-score">0</div>
-                        <div class="team-timer" id="hero-team2-timer">2:30</div>
-                    </div>
-                </div>
-                <div id="hero-current-team">Current: Team 1</div>
-                <div id="hero-first-to">First to 60 points wins!</div>
-            </header>
-        </aside>
     </div>
-    <footer>
+    <footer class="site-footer">
         <p>&copy; 2026 Tug of War Math Game. All rights reserved.</p>
     </footer>
-    <!-- Removed Three.js CDN -->
     <script src="static/js/firebaseRuntimeConfig.js"></script>
     <script type="module" src="static/js/script.js"></script>
 </body>

@@ -3,11 +3,14 @@ let lastRopePos = 0;
 export function setRopePosition(position) {
     // Clamp position between -1 and 1
     position = Math.max(-1, Math.min(1, position));
-    // The max translation (pixels) for SVG width 600: move from -250 to +250 (centered at 300)
-    const maxTranslate = 250;
     const ropeGroup = document.getElementById('rope-group');
     if (ropeGroup) {
-        ropeGroup.setAttribute('transform', `translate(${300 + position * maxTranslate},0)`);
+        const maxTranslate = ropeGroup instanceof SVGElement ? 250 : 130;
+        if (ropeGroup instanceof SVGElement) {
+            ropeGroup.setAttribute('transform', `translate(${300 + position * maxTranslate},0)`);
+        } else {
+            ropeGroup.style.transform = `translate(calc(-50% + ${position * maxTranslate}px), -50%)`;
+        }
     }
     // Play SFX if rope moves significantly
     if (Math.abs(position - lastRopePos) > 0.01) {

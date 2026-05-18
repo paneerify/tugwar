@@ -152,6 +152,7 @@ export function resolveSubmittedAnswer(snapshot, ans, answeringTeam = snapshot.c
             return queueAnswerReveal(nextState, nextState.currentQuestion[teamIdx], nextTeam);
         }
         nextState.currentTeam = nextTeam;
+        nextState.currentAnswer[nextTeam] = '';
         nextState.currentQuestion[nextTeam] = nextState.currentQuestion[teamIdx] ? { ...nextState.currentQuestion[teamIdx] } : null;
         nextState.currentQuestion[teamIdx] = null;
         nextState.questionTimeLeft[teamIdx] = 0;
@@ -211,13 +212,11 @@ export function tickGameSnapshot(snapshot) {
         return nextState;
     }
 
-    for (let teamIdx = 0; teamIdx < 2; teamIdx++) {
-        if (nextState.teamTimeLeft[teamIdx] > 0) {
-            nextState.teamTimeLeft[teamIdx] -= 1;
-        }
+    const currentTeam = nextState.currentTeam;
+    if (nextState.teamTimeLeft[currentTeam] > 0) {
+        nextState.teamTimeLeft[currentTeam] -= 1;
     }
 
-    const currentTeam = nextState.currentTeam;
     if (nextState.questionTimeLeft[currentTeam] > 0) {
         nextState.questionTimeLeft[currentTeam] -= 1;
     }
