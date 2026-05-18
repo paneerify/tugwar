@@ -14,7 +14,6 @@
     <div class="cosmic-app-shell">
         <header class="topbar">
             <div>
-                <p class="eyebrow">Class IX Cosmic Arena</p>
                 <h1 class="math-title">Tug of War Math Game</h1>
             </div>
             <div class="topbar-actions">
@@ -25,12 +24,8 @@
         <main class="main-content">
             <section id="welcome-screen" class="welcome-screen cosmic-panel">
                 <div class="welcome-copy">
-                    <p class="welcome-kicker">Press to Start</p>
-                    <h2>Voyage through roots, powers, stars and scores.</h2>
-                    <p>
-                        A same-device round now uses only the active team's clock. Set the teams, tap the calculator keys,
-                        and pull the rope across the galaxy.
-                    </p>
+                    <p class="welcome-kicker">Welcome</p>
+                    <h2>Press Start Game</h2>
                     <button id="welcome-start-btn" class="primary-cta" type="button">Start Game</button>
                 </div>
                 <div class="welcome-art" aria-hidden="true">
@@ -114,8 +109,8 @@
                         <div class="team-turn-pill" id="team1-turn-pill">Waiting</div>
                         <div class="calculator-shell">
                             <label class="calculator-label" for="team1-answer-display">Answer Display</label>
-                            <input id="team1-answer-display" class="calculator-display" type="text" value="" readonly>
-                            <div class="calculator-keypad" data-team="0">
+                            <input id="team1-answer-display" class="calculator-display" type="text" value="" inputmode="numeric" autocomplete="off" placeholder="Tap to type answer">
+                            <div class="calculator-keypad" data-team="0" aria-hidden="true">
                                 <button type="button" class="calc-key" data-value="7">7</button>
                                 <button type="button" class="calc-key" data-value="8">8</button>
                                 <button type="button" class="calc-key" data-value="9">9</button>
@@ -147,15 +142,16 @@
                         </div>
                         <div class="rope-labels-row">
                             <span id="rope-team1-label" class="rope-team-label left">Team 1</span>
-                            <span class="rope-center-label">Galactic Tug</span>
+                            <span class="rope-center-label">Tug of War</span>
                             <span id="rope-team2-label" class="rope-team-label right">Team 2</span>
                         </div>
                         <div class="tug-scene" aria-label="Tug of war scene">
                             <div class="team-figures left">
-                                <div class="stick-figure"></div>
-                                <div class="stick-figure"></div>
+                                <div class="stick-figure pulling"><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
+                                <div class="stick-figure pulling"><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
                             </div>
                             <div class="tug-track">
+                                <div class="ground-line"></div>
                                 <div class="track-center"></div>
                                 <div id="rope-group" class="rope-group">
                                     <div class="rope-line"></div>
@@ -163,8 +159,8 @@
                                 </div>
                             </div>
                             <div class="team-figures right">
-                                <div class="stick-figure"></div>
-                                <div class="stick-figure"></div>
+                                <div class="stick-figure pulling"><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
+                                <div class="stick-figure pulling"><span class="arm-left"></span><span class="arm-right"></span><span class="leg-left"></span><span class="leg-right"></span></div>
                             </div>
                         </div>
                         <div id="answer-result" class="answer-result" style="display:none;">
@@ -187,8 +183,8 @@
                         <div class="team-turn-pill" id="team2-turn-pill">Waiting</div>
                         <div class="calculator-shell">
                             <label class="calculator-label" for="team2-answer-display">Answer Display</label>
-                            <input id="team2-answer-display" class="calculator-display" type="text" value="" readonly>
-                            <div class="calculator-keypad" data-team="1">
+                            <input id="team2-answer-display" class="calculator-display" type="text" value="" inputmode="numeric" autocomplete="off" placeholder="Tap to type answer">
+                            <div class="calculator-keypad" data-team="1" aria-hidden="true">
                                 <button type="button" class="calc-key" data-value="7">7</button>
                                 <button type="button" class="calc-key" data-value="8">8</button>
                                 <button type="button" class="calc-key" data-value="9">9</button>

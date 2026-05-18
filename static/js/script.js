@@ -199,7 +199,9 @@ document.addEventListener('DOMContentLoaded', function() {
       for (let teamIdx = 0; teamIdx < 2; teamIdx++) {
         const display = getTeamDisplay(teamIdx);
         if (!display) continue;
-        display.value = gameState.currentAnswer[teamIdx] || '';
+        if (display.value !== (gameState.currentAnswer[teamIdx] || '')) {
+          display.value = gameState.currentAnswer[teamIdx] || '';
+        }
       }
     }
 
@@ -225,9 +227,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
       for (let teamIdx = 0; teamIdx < 2; teamIdx++) {
         const active = isTeamInteractive(teamIdx);
+        const display = getTeamDisplay(teamIdx);
         cards[teamIdx]?.classList.toggle('is-active', active);
         cards[teamIdx]?.classList.toggle('is-disabled', !active);
         cards[teamIdx]?.classList.toggle('current', !gameState.tiebreakerActive && gameState.currentTeam === teamIdx && gameState.gameActive);
+        if (display) {
+          display.readOnly = !active;
+        }
         if (pills[teamIdx]) {
           pills[teamIdx].classList.toggle('is-active', active);
           pills[teamIdx].classList.toggle('is-locked', !active);
@@ -243,9 +249,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateCalculatorEntry(teamIdx, nextValue) {
-      gameState.currentAnswer[teamIdx] = nextValue;
+      const normalizedValue = String(nextValue ?? '').replace(/[^0-9-]/g, '');
+      const compactValue = normalizedValue.startsWith('-')
+        ? `-${normalizedValue.slice(1).replace(/-/g, '')}`
+        : normalizedValue.replace(/-/g, '');
+      gameState.currentAnswer[teamIdx] = compactValue;
       if (answerInput && teamIdx === getEffectiveTeam(teamIdx)) {
-        answerInput.value = nextValue;
+        answerInput.value = compactValue;
       }
       syncCalculatorDisplays();
     }
@@ -368,24 +378,30 @@ document.addEventListener('DOMContentLoaded', function() {
         submitAnswer(1);
       });
     }
-    document.querySelectorAll('.calculator-keypad').forEach((keypad) => {
-      keypad.addEventListener('click', function(event) {
-        const button = event.target.closest('.calc-key');
-        if (!button) return;
-        const teamIdx = Number(keypad.dataset.team);
-        if (!isTeamInteractive(teamIdx)) return;
-        const currentValue = gameState.currentAnswer[teamIdx] || '';
-        const action = button.dataset.action;
-        if (action === 'clear') {
-          updateCalculatorEntry(teamIdx, '');
+    document.querySelectorAll('.calculator-display').forEach((display, index) => {
+      display.addEventListener('focus', function() {
+        if (!isTeamInteractive(index)) {
+          display.blur();
           return;
         }
-        if (action === 'backspace') {
-          updateCalculatorEntry(teamIdx, currentValue.slice(0, -1));
+        if (answerInput) {
+          answerInput.value = gameState.currentAnswer[index] || '';
+        }
+      });
+
+      display.addEventListener('input', function() {
+        if (!isTeamInteractive(index)) {
+          syncCalculatorDisplays();
           return;
         }
-        const value = button.dataset.value || '';
-        updateCalculatorEntry(teamIdx, `${currentValue}${value}`);
+        updateCalculatorEntry(index, display.value);
+      });
+
+      display.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          submitAnswer(index);
+        }
       });
     });
     document.querySelectorAll('.team-submit-btn').forEach((button) => {
@@ -1189,6 +1205,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   window.addEventListener('keydown', function(e) {
+    if (document.activeElement && document.activeElement.classList?.contains('calculator-display')) {
+      return;
+    }
     if (!gameState.gameActive) return;
     const inputTeam = gameState.playMode === 'diff' ? gameState.selectedTeam : gameState.currentTeam;
     if (e.key === 'Backspace') {
