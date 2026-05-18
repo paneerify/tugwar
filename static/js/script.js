@@ -954,6 +954,32 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  function configureSameDeviceTeamForm() {
+    const team1NameInput = document.getElementById('team1-name');
+    const team2NameInput = document.getElementById('team2-name');
+    if (!team1NameInput || !team2NameInput) return;
+
+    if (team1Card) team1Card.style.display = '';
+    if (team2Card) team2Card.style.display = '';
+    team1NameInput.disabled = false;
+    team2NameInput.disabled = false;
+    team1NameInput.required = false;
+    team2NameInput.required = false;
+    if (!team1NameInput.value.trim()) team1NameInput.value = 'Team 1';
+    if (!team2NameInput.value.trim()) team2NameInput.value = 'Team 2';
+
+    [team1PlayersDiv, team2PlayersDiv].forEach((playersDiv, teamIdx) => {
+      playersDiv.style.display = '';
+      Array.from(playersDiv.querySelectorAll('input')).forEach((input, playerIdx) => {
+        input.disabled = false;
+        input.required = false;
+        if (!input.value.trim()) {
+          input.value = `Player ${teamIdx * 2 + playerIdx + 1}`;
+        }
+      });
+    });
+  }
+
   async function openDiffTeamSetup() {
     const lobbyState = currentLobbyState;
     const currentTeam = getCurrentLobbyTeam(lobbyState);
@@ -1260,10 +1286,10 @@ document.addEventListener('DOMContentLoaded', function() {
       // Ensure player inputs and team name fields are created before showing the form
       createPlayerInputs(team1PlayersDiv, 'team1');
       createPlayerInputs(team2PlayersDiv, 'team2');
+      configureSameDeviceTeamForm();
+      hideFormError();
       showSameDeviceSetup();
-      setTimeout(() => {
-        teamForm.style.display = '';
-      }, 0);
+      teamForm.style.display = '';
     };
   }
 
