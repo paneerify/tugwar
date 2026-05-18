@@ -160,6 +160,7 @@ export async function removeLobbyTeam(teamId) {
         opponentTeam.status = 'waiting';
         opponentTeam.opponentId = null;
         opponentTeam.slot = null;
+        opponentTeam.setupConfirmed = false;
         opponentTeam.updatedAt = Date.now();
       }
     }
@@ -181,13 +182,29 @@ export async function matchLobbyTeams(teamId, opponentId) {
     currentTeam.opponentId = opponentTeam.id;
     currentTeam.slot = 0;
     currentTeam.sessionId = sessionId;
+    currentTeam.setupConfirmed = false;
     currentTeam.updatedAt = Date.now();
 
     opponentTeam.status = 'matched';
     opponentTeam.opponentId = currentTeam.id;
     opponentTeam.slot = 1;
     opponentTeam.sessionId = sessionId;
+    opponentTeam.setupConfirmed = false;
     opponentTeam.updatedAt = Date.now();
+    return { teams };
+  });
+}
+
+export async function setLobbyTeamSetupConfirmed(teamId, setupConfirmed) {
+  const runMutation = chooseMutationRunner();
+  return runMutation((lobbyState) => {
+    const teams = lobbyState.teams.map((team) => ({ ...team }));
+    const currentTeam = teams.find((team) => team.id === teamId);
+    if (!currentTeam) {
+      return { teams };
+    }
+    currentTeam.setupConfirmed = Boolean(setupConfirmed);
+    currentTeam.updatedAt = Date.now();
     return { teams };
   });
 }

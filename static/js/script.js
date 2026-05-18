@@ -2,7 +2,7 @@ import { getTeam1PlayersDiv, getTeam2PlayersDiv, getTeamForm, getGameCanvas, get
 import { gameState, POINTS_TO_WIN } from './modules/gameState.js';
 import { createPlayerInputs, setRopePosition } from './modules/ui.js';
 import { applyGameSnapshot, buildInitialGameSnapshot, drawGame, endGame, handleAnswer, nextQuestion, resolveSubmittedAnswer, tickGameSnapshot } from './modules/gameLogic.js';
-import { getLobbySnapshot, getMultiplayerBackendLabel, getSessionSnapshot, matchLobbyTeams, mutateSessionState, removeLobbyTeam, saveLobbyTeam, saveSessionTeam, subscribeToLobby, subscribeToSession } from './modules/multiplayerBackend.js';
+import { getLobbySnapshot, getMultiplayerBackendLabel, getSessionSnapshot, matchLobbyTeams, mutateSessionState, removeLobbyTeam, saveLobbyTeam, saveSessionTeam, setLobbyTeamSetupConfirmed, subscribeToLobby, subscribeToSession } from './modules/multiplayerBackend.js';
 
 const SESSION_OWNER_KEY = 'tugwar-diff-owner-v1';
 const SESSION_TEAM_KEY = 'tugwar-diff-team-v1';
@@ -107,8 +107,7 @@ function startGame() {
     // Show answer input area
     const answerArea = document.getElementById('answer-area');
     if (answerArea) answerArea.style.display = '';
-    const gameBoard = document.getElementById('game-board');
-    if (gameBoard) gameBoard.classList.remove('is-idle');
+    setGameBoardVisible(true);
     const answerInput = document.getElementById('answer-input');
     if (answerInput) answerInput.value = '';
 
@@ -142,8 +141,7 @@ function startGame() {
     // Show answer input area
     const answerArea = document.getElementById('answer-area');
     if (answerArea) answerArea.style.display = '';
-    const gameBoard = document.getElementById('game-board');
-    if (gameBoard) gameBoard.classList.remove('is-idle');
+    setGameBoardVisible(true);
     const answerInput = document.getElementById('answer-input');
     if (answerInput) answerInput.value = '';
   }
@@ -176,10 +174,45 @@ document.addEventListener('DOMContentLoaded', function() {
     const team1QuickAnswerBtn = document.getElementById('team1-quick-answer-btn');
     const team2QuickAnswerBtn = document.getElementById('team2-quick-answer-btn');
     const welcomeScreen = document.getElementById('welcome-screen');
+    const infoScreen = document.getElementById('info-screen');
     const welcomeStartBtn = document.getElementById('welcome-start-btn');
+    const howToPlayBtn = document.getElementById('how-to-play-btn');
+    const rulesBtn = document.getElementById('rules-btn');
+    const infoBackBtn = document.getElementById('info-back-btn');
+    const infoStartBtn = document.getElementById('info-start-btn');
+    const infoKicker = document.getElementById('info-kicker');
+    const infoTitle = document.getElementById('info-title');
+    const infoBody = document.getElementById('info-body');
     const homeBtn = document.getElementById('home-btn');
     const gameAreaSection = document.getElementById('game-area');
+    const gameBoard = document.getElementById('game-board');
     let answerResultTimer = null;
+
+    const infoContent = {
+      howToPlay: {
+        kicker: 'How to Play',
+        title: 'How the match flows',
+        body: [
+          'Tap Start Game, then choose Same Device or Different Devices.',
+          'In Same Device mode, set both team names and players, then start the round.',
+          'Only the team whose turn it is can answer, and only that team\'s timer is used.',
+          'Type the answer into the active calculator display and press the team\'s answer button.',
+          'Correct answers pull the rope toward that team. Wrong answers pass the turn across.'
+        ]
+      },
+      rules: {
+        kicker: 'Rules',
+        title: 'Scoring and winning',
+        body: [
+          'Each correct answer gives 5 points.',
+          'Each wrong answer removes 5 points, but scores never go below 0.',
+          'If a team runs out of answer time, it loses 1 point and the turn passes on.',
+          'The first team to reach 60 points wins the match.',
+          'If time runs out for both teams with equal scores, the game goes to a quick answer round.',
+          'The rope position reflects the score difference between the two teams.'
+        ]
+      }
+    };
 
     function getTeamDisplay(teamIdx) {
       return document.getElementById(teamIdx === 0 ? 'team1-answer-display' : 'team2-answer-display');
@@ -266,14 +299,62 @@ document.addEventListener('DOMContentLoaded', function() {
       syncCalculatorUi();
     }
 
+    function setGameBoardVisible(visible) {
+      if (!gameBoard) return;
+      gameBoard.style.display = visible ? 'grid' : 'none';
+      gameBoard.classList.toggle('is-idle', !visible);
+    }
+
+    function resetPreGamePanels() {
+      if (modeSelectDiv) modeSelectDiv.style.display = 'none';
+      if (lobbyPanel) lobbyPanel.style.display = 'none';
+      if (teamForm) teamForm.style.display = 'none';
+      if (newGameBtn) newGameBtn.style.display = 'none';
+      if (answerArea) answerArea.style.display = 'none';
+      if (gameCanvas) gameCanvas.style.display = 'none';
+      setGameBoardVisible(false);
+    }
+
     function showWelcomeScreen() {
       if (welcomeScreen) welcomeScreen.style.display = '';
+      if (infoScreen) infoScreen.style.display = 'none';
       if (gameAreaSection) gameAreaSection.style.display = 'none';
+      resetPreGamePanels();
     }
 
     function showGameArea() {
       if (welcomeScreen) welcomeScreen.style.display = 'none';
+      if (infoScreen) infoScreen.style.display = 'none';
       if (gameAreaSection) gameAreaSection.style.display = '';
+    }
+
+    function openInfoScreen(kind) {
+      const content = infoContent[kind];
+      if (!content || !infoScreen || !infoBody) return;
+      if (welcomeScreen) welcomeScreen.style.display = 'none';
+      if (gameAreaSection) gameAreaSection.style.display = 'none';
+      infoScreen.style.display = '';
+      if (infoKicker) infoKicker.textContent = content.kicker;
+      if (infoTitle) infoTitle.textContent = content.title;
+      infoBody.innerHTML = content.body.map((item) => `<p>${item}</p>`).join('');
+    }
+
+    function showModeSelection() {
+      showGameArea();
+      if (modeSelectDiv) modeSelectDiv.style.display = '';
+      if (lobbyPanel) lobbyPanel.style.display = 'none';
+      if (teamForm) teamForm.style.display = 'none';
+      if (answerArea) answerArea.style.display = 'none';
+      setGameBoardVisible(false);
+    }
+
+    function showSameDeviceSetup() {
+      showGameArea();
+      if (modeSelectDiv) modeSelectDiv.style.display = 'none';
+      if (lobbyPanel) lobbyPanel.style.display = 'none';
+      if (teamForm) teamForm.style.display = '';
+      if (answerArea) answerArea.style.display = 'none';
+      setGameBoardVisible(false);
     }
 
     function showAnswerResult(message, signText = '', signClass = '') {
@@ -411,8 +492,27 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     if (welcomeStartBtn) {
       welcomeStartBtn.addEventListener('click', function() {
-        showGameArea();
-        if (modeSelectDiv) modeSelectDiv.style.display = '';
+        showModeSelection();
+      });
+    }
+    if (howToPlayBtn) {
+      howToPlayBtn.addEventListener('click', function() {
+        openInfoScreen('howToPlay');
+      });
+    }
+    if (rulesBtn) {
+      rulesBtn.addEventListener('click', function() {
+        openInfoScreen('rules');
+      });
+    }
+    if (infoBackBtn) {
+      infoBackBtn.addEventListener('click', function() {
+        showWelcomeScreen();
+      });
+    }
+    if (infoStartBtn) {
+      infoStartBtn.addEventListener('click', function() {
+        showModeSelection();
       });
     }
     if (homeBtn) {
@@ -430,8 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (teamForm) teamForm.style.display = 'none';
         if (gameCanvas) gameCanvas.style.display = 'none';
         if (newGameBtn) newGameBtn.style.display = 'none';
-        const gameBoard = document.getElementById('game-board');
-        if (gameBoard) gameBoard.classList.add('is-idle');
+        setGameBoardVisible(false);
         showWelcomeScreen();
         updateHeroSection();
       });
@@ -564,8 +663,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (gameCanvas) gameCanvas.style.display = 'none';
         if (newGameBtn) newGameBtn.style.display = 'none';
         resetDisplayedAnswers();
-        const gameBoard = document.getElementById('game-board');
-        if (gameBoard) gameBoard.classList.add('is-idle');
+        setGameBoardVisible(false);
         showWelcomeScreen();
         updateHeroSection();
       });
@@ -726,8 +824,8 @@ document.addEventListener('DOMContentLoaded', function() {
       gameCanvas.width = 700;
       gameCanvas.height = 400;
     }
-    const gameBoard = document.getElementById('game-board');
     if (gameBoard) gameBoard.classList.remove('is-idle');
+    setGameBoardVisible(true);
     drawGame(!gameState.gameActive);
     updateDiffAnswerUi();
   }
@@ -871,6 +969,12 @@ document.addEventListener('DOMContentLoaded', function() {
       renderLobby();
       return;
     }
+    if (!currentTeam.setupConfirmed || !opponentTeam.setupConfirmed) {
+      const confirmedCount = Number(Boolean(currentTeam.setupConfirmed)) + Number(Boolean(opponentTeam.setupConfirmed));
+      setLobbyStatus(`${confirmedCount}/2 users are ready to continue. Both teams must press continue.`);
+      renderLobby();
+      return;
+    }
 
     gameState.playMode = 'diff';
     gameState.selectedTeam = currentTeam.slot;
@@ -985,7 +1089,35 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    setLobbyStatus(`Matched with ${opponentTeam.name}. Continue to game setup.`);
+    setLobbyStatus(`Matched with ${opponentTeam.name}. Both users must press continue to reach game setup.`);
+    renderLobby();
+  }
+
+  async function confirmLobbyContinuation() {
+    const currentTeam = getCurrentLobbyTeam(currentLobbyState);
+    if (!currentTeam || currentTeam.status !== 'matched') {
+      setLobbyStatus('Match your team with an opponent before continuing.');
+      return;
+    }
+
+    try {
+      currentLobbyState = await setLobbyTeamSetupConfirmed(currentTeam.id, true);
+    } catch (error) {
+      setLobbyStatus(describeLobbyError(error, 'Could not update continue confirmation.'));
+      return;
+    }
+
+    const freshCurrentTeam = getCurrentLobbyTeam(currentLobbyState);
+    const opponentTeam = freshCurrentTeam?.opponentId
+      ? currentLobbyState.teams.find((team) => team.id === freshCurrentTeam.opponentId)
+      : null;
+    const confirmedCount = Number(Boolean(freshCurrentTeam?.setupConfirmed)) + Number(Boolean(opponentTeam?.setupConfirmed));
+
+    if (freshCurrentTeam?.setupConfirmed && opponentTeam?.setupConfirmed) {
+      setLobbyStatus('2/2 users are ready. Continue to game setup.');
+    } else {
+      setLobbyStatus(`${confirmedCount}/2 users are ready to continue.`);
+    }
     renderLobby();
   }
 
@@ -1004,8 +1136,25 @@ document.addEventListener('DOMContentLoaded', function() {
       lobbyMyTeam.innerHTML = '<p class="lobby-empty">No team created yet.</p>';
     } else {
       const opponentTeam = currentTeam.opponentId ? lobbyState.teams.find((team) => team.id === currentTeam.opponentId) : null;
+      const setupReadyCount = Number(Boolean(currentTeam.setupConfirmed)) + Number(Boolean(opponentTeam?.setupConfirmed));
+      const readySummary = currentTeam.status === 'matched' && opponentTeam
+        ? `
+          <div class="lobby-ready-status-list">
+            <div class="lobby-ready-status-row">
+              <span class="lobby-ready-name">${currentTeam.name}</span>
+              <span class="lobby-ready-badge${currentTeam.setupConfirmed ? ' ready' : ''}">${currentTeam.setupConfirmed ? 'Ready' : 'Waiting'}</span>
+            </div>
+            <div class="lobby-ready-status-row">
+              <span class="lobby-ready-name">${opponentTeam.name}</span>
+              <span class="lobby-ready-badge${opponentTeam.setupConfirmed ? ' ready' : ''}">${opponentTeam.setupConfirmed ? 'Ready' : 'Waiting'}</span>
+            </div>
+          </div>`
+        : '';
       const actionButton = currentTeam.status === 'matched'
-        ? '<button type="button" id="lobby-continue-btn">Continue to Game Setup</button>'
+        ? `
+          <button type="button" id="lobby-continue-btn">${setupReadyCount === 2 ? 'Continue to Game Setup' : 'Press Continue'}</button>
+          <div class="lobby-ready-counter">${setupReadyCount}/2 users ready to continue</div>
+          ${readySummary}`
         : '<button type="button" id="lobby-remove-team-btn" class="lobby-secondary-btn">Remove Team</button>';
 
       lobbyMyTeam.innerHTML = `
@@ -1037,7 +1186,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const continueBtn = document.getElementById('lobby-continue-btn');
     if (continueBtn) {
-      continueBtn.addEventListener('click', openDiffTeamSetup);
+      continueBtn.addEventListener('click', async function() {
+        const currentTeam = getCurrentLobbyTeam(currentLobbyState);
+        const opponentTeam = currentTeam?.opponentId ? currentLobbyState.teams.find((team) => team.id === currentTeam.opponentId) : null;
+        if (!currentTeam?.setupConfirmed) {
+          await confirmLobbyContinuation();
+          return;
+        }
+        if (!opponentTeam?.setupConfirmed) {
+          setLobbyStatus('1/2 users are ready. Waiting for the other team to press continue.');
+          renderLobby();
+          return;
+        }
+        openDiffTeamSetup();
+      });
     }
 
     const removeBtn = document.getElementById('lobby-remove-team-btn');
@@ -1098,7 +1260,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Ensure player inputs and team name fields are created before showing the form
       createPlayerInputs(team1PlayersDiv, 'team1');
       createPlayerInputs(team2PlayersDiv, 'team2');
-      if (gameAreaSection) gameAreaSection.style.display = '';
+      showSameDeviceSetup();
       setTimeout(() => {
         teamForm.style.display = '';
       }, 0);
@@ -1134,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       setLobbyStatus('');
       if (lobbyPanel) lobbyPanel.style.display = 'none';
-      modeSelectDiv.style.display = '';
+      showModeSelection();
     });
   }
 
@@ -1185,6 +1347,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (gameCanvas) gameCanvas.style.display = 'none';
         const answerArea = document.getElementById('answer-area');
         if (answerArea) answerArea.style.display = '';
+        setGameBoardVisible(true);
         setLobbyStatus('Waiting for the shared match state...');
         return;
       }
@@ -1254,8 +1417,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (gameCanvas) gameCanvas.style.display = 'none';
       newGameBtn.style.display = 'none';
       resetDisplayedAnswers();
-      const gameBoard = document.getElementById('game-board');
-      if (gameBoard) gameBoard.classList.add('is-idle');
+      setGameBoardVisible(false);
       showWelcomeScreen();
     });
   }

@@ -23,10 +23,23 @@
         </header>
         <main class="main-content">
             <section id="welcome-screen" class="welcome-screen cosmic-panel">
+                <div class="welcome-background-math" aria-hidden="true">
+                    <span class="background-formula formula-a">x^2 + y^2 = r^2</span>
+                    <span class="background-formula formula-b">x = (-b +- sqrt(b^2 - 4ac)) / 2a</span>
+                    <span class="background-formula formula-c">15, 27, 64, 81</span>
+                    <span class="background-formula formula-d">ax^2 + bx + c = 0</span>
+                    <span class="background-formula formula-e">pi, theta, lambda</span>
+                </div>
                 <div class="welcome-copy">
                     <p class="welcome-kicker">Welcome</p>
                     <h2>Press Start Game</h2>
-                    <button id="welcome-start-btn" class="primary-cta" type="button">Start Game</button>
+                    <div class="welcome-actions">
+                        <button id="welcome-start-btn" class="primary-cta" type="button">Start Game</button>
+                        <div class="welcome-secondary-actions">
+                            <button id="how-to-play-btn" class="secondary-cta" type="button">How to Play</button>
+                            <button id="rules-btn" class="secondary-cta" type="button">Rules</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="welcome-art" aria-hidden="true">
                     <div class="orbit orbit-a"></div>
@@ -35,6 +48,17 @@
                     <div class="formula-card">3^4 = 81</div>
                     <div class="formula-card">pi, x, y, z</div>
                     <div class="nebula-glow"></div>
+                </div>
+            </section>
+            <section id="info-screen" class="info-screen cosmic-panel" style="display:none;">
+                <div class="info-screen-header">
+                    <p id="info-kicker" class="welcome-kicker">How to Play</p>
+                    <h2 id="info-title">How the game works</h2>
+                </div>
+                <div id="info-body" class="info-body"></div>
+                <div class="info-actions">
+                    <button id="info-back-btn" class="secondary-cta" type="button">Back</button>
+                    <button id="info-start-btn" class="primary-cta" type="button">Start Game</button>
                 </div>
             </section>
             <section id="game-area" class="game-area" style="display:none;">
@@ -94,7 +118,7 @@
                         <button type="submit">Start Game</button>
                     </div>
                 </form>
-                <section id="game-board" class="game-board is-idle">
+                <section id="game-board" class="game-board is-idle" style="display:none;">
                     <article id="team1-card" class="team-calculator team-card" data-team="0">
                         <div class="team-panel-header">
                             <div>

@@ -114,6 +114,7 @@ export function resolveSubmittedAnswer(snapshot, ans, answeringTeam = snapshot.c
     }
 
     const teamIdx = answeringTeam;
+    const timedOut = ans === null;
 
     if (nextState.tiebreakerActive) {
         const isCorrect = ans !== null && String(ans).trim() === String(nextState.currentQuestion[teamIdx]?.ans);
@@ -128,7 +129,7 @@ export function resolveSubmittedAnswer(snapshot, ans, answeringTeam = snapshot.c
         return nextState;
     }
 
-    const isCorrect = ans !== null && String(ans).trim() === String(nextState.currentQuestion[teamIdx]?.ans);
+    const isCorrect = !timedOut && String(ans).trim() === String(nextState.currentQuestion[teamIdx]?.ans);
     nextState.currentAnswer[teamIdx] = ans === null ? '' : String(ans);
     nextState.currentPlayer[teamIdx] = (nextState.currentPlayer[teamIdx] + 1) % Math.max(1, nextState.playerNames[teamIdx].length);
     nextState.questionAttemptedBy[teamIdx] = true;
@@ -146,7 +147,8 @@ export function resolveSubmittedAnswer(snapshot, ans, answeringTeam = snapshot.c
         const nextTeam = 1 - teamIdx;
         return startFreshQuestion(nextState, nextTeam);
     } else {
-        nextState.teamScores[teamIdx] = Math.max(0, nextState.teamScores[teamIdx] - 5);
+        const penalty = timedOut ? 1 : 5;
+        nextState.teamScores[teamIdx] = Math.max(0, nextState.teamScores[teamIdx] - penalty);
         const nextTeam = 1 - teamIdx;
         if (nextState.questionAttemptedBy[nextTeam]) {
             return queueAnswerReveal(nextState, nextState.currentQuestion[teamIdx], nextTeam);
