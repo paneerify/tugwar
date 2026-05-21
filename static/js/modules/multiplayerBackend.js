@@ -11,7 +11,9 @@ let localListeners = [];
 function normalizeLobbyState(rawState) {
   const lobbyState = rawState && Array.isArray(rawState.teams) ? rawState : { teams: [] };
   const cutoff = Date.now() - LOBBY_STALE_MS;
-  lobbyState.teams = lobbyState.teams.filter((team) => team && team.updatedAt && team.updatedAt >= cutoff);
+  lobbyState.teams = lobbyState.teams
+    .filter((team) => team && team.updatedAt && team.updatedAt >= cutoff)
+    .map((team) => ({ ...team, difficulty: Number(team.difficulty ?? 0) }));
   return lobbyState;
 }
 

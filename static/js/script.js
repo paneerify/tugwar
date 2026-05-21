@@ -1,4 +1,5 @@
 import { getTeam1PlayersDiv, getTeam2PlayersDiv, getTeamForm, getGameCanvas, getModeSelectDiv, showFormError, hideFormError } from './modules/dom.js';
+import { DIFFICULTY } from './modules/difficulty.js';
 import { gameState, POINTS_TO_WIN } from './modules/gameState.js';
 import { createPlayerInputs, setRopePosition } from './modules/ui.js';
 import { applyGameSnapshot, buildInitialGameSnapshot, drawGame, endGame, handleAnswer, nextQuestion, resolveSubmittedAnswer, tickGameSnapshot } from './modules/gameLogic.js';
@@ -6,6 +7,7 @@ import { getLobbySnapshot, getMultiplayerBackendLabel, getSessionSnapshot, match
 
 const SESSION_OWNER_KEY = 'tugwar-diff-owner-v1';
 const SESSION_TEAM_KEY = 'tugwar-diff-team-v1';
+const LOBBY_WAITING_TEAMS_PER_PAGE = 8;
 let currentLobbyState = { teams: [] };
 let stopLobbySubscription = null;
 let currentSessionState = null;
@@ -15,6 +17,7 @@ let hostTickInterval = null;
 let hostTickPending = false;
 let lobbyExpiryInterval = null;
 let activeGameResultKey = null;
+let lobbyWaitingTeamsPage = 1;
 
 function createSessionId(prefix) {
   if (window.crypto && typeof window.crypto.randomUUID === 'function') {
@@ -207,10 +210,12 @@ function startGame() {
         gameState.gameTimer = null;
       }
       drawGame(!gameState.gameActive);
+      syncArenaDecorations();
     }, 1000);
     nextQuestion(gameState.currentTeam);
     gameState.matchStarted = true;
     drawGame();
+    syncArenaDecorations();
     // Show answer input area
     const answerArea = document.getElementById('answer-area');
     if (answerArea) answerArea.style.display = '';
@@ -245,10 +250,12 @@ function startGame() {
         }
       }
       drawGame();
+      syncArenaDecorations();
     }, 1000);
     nextQuestion(t);
     gameState.matchStarted = true;
     drawGame();
+    syncArenaDecorations();
     // Show answer input area
     const answerArea = document.getElementById('answer-area');
     if (answerArea) answerArea.style.display = '';
@@ -753,34 +760,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.__tugwarUpdateHeroSection = updateHeroSection;
 
+  function syncArenaDecorations() {
+    updateHeroSection();
+    if (typeof updateAnswerControls === 'function') {
+      updateAnswerControls();
+    }
+    if (typeof setRopePosition === 'function' && gameState.teamScores) {
+      const maxScore = 50;
+      const diff = gameState.teamScores[0] - gameState.teamScores[1];
+      let pos = diff / maxScore;
+      pos = Math.max(-1, Math.min(1, pos));
+      setRopePosition(pos);
+    }
+    const ropeTeam1 = document.getElementById('rope-team1-label');
+    const ropeTeam2 = document.getElementById('rope-team2-label');
+    if (ropeTeam1) ropeTeam1.textContent = gameState.teamNames[0] || 'Team 1';
+    if (ropeTeam2) ropeTeam2.textContent = gameState.teamNames[1] || 'Team 2';
+  }
+
   // Update hero section every second and after game state changes
   setInterval(updateHeroSection, 1000);
   // Also update after every drawGame
   const origDrawGame = window.drawGame || drawGame;
   const enhancedDrawGame = function(gameOver) {
     origDrawGame(gameOver);
-    updateHeroSection();
-    if (typeof updateAnswerControls === 'function') {
-      updateAnswerControls();
-    }
-    // Animate rope position based on score difference
-    if (typeof setRopePosition === 'function' && gameState.teamScores) {
-      // Calculate position: -1 (team 1 winning big), 1 (team 2 winning big), 0 (tie)
-      const maxScore = 50; // Adjust if your win score is different
-      const diff = gameState.teamScores[0] - gameState.teamScores[1];
-      let pos = diff / maxScore;
-      pos = Math.max(-1, Math.min(1, pos));
-      setRopePosition(pos);
-    }
-    // Update rope team labels
-    const ropeTeam1 = document.getElementById('rope-team1-label');
-    const ropeTeam2 = document.getElementById('rope-team2-label');
-    if (ropeTeam1) ropeTeam1.textContent = gameState.teamNames[0] || 'Team 1';
-    if (ropeTeam2) ropeTeam2.textContent = gameState.teamNames[1] || 'Team 2';
+    syncArenaDecorations();
   };
-  drawGame = enhancedDrawGame;
   window.drawGame = enhancedDrawGame;
-  updateHeroSection();
+  syncArenaDecorations();
   const sidebarNewGameBtn = document.getElementById('sidebar-new-game-btn');
     if (sidebarNewGameBtn) {
       sidebarNewGameBtn.addEventListener('click', async function(e) {
@@ -962,6 +969,35 @@ document.addEventListener('DOMContentLoaded', function() {
     return lobbyState.teams.find((team) => team.id === currentTeamId && team.ownerId === sessionOwnerId) || null;
   }
 
+  function syncLobbyStatusFromState(previousLobbyState = null) {
+    const currentTeam = getCurrentLobbyTeam(currentLobbyState);
+    if (!currentTeam) {
+      return;
+    }
+
+    const previousTeam = previousLobbyState ? getCurrentLobbyTeam(previousLobbyState) : null;
+    const opponentTeam = currentTeam.opponentId
+      ? currentLobbyState.teams.find((team) => team.id === currentTeam.opponentId)
+      : null;
+    const previousOpponent = previousTeam?.opponentId && previousLobbyState
+      ? previousLobbyState.teams.find((team) => team.id === previousTeam.opponentId)
+      : null;
+
+    if (currentTeam.status === 'matched' && previousTeam?.status !== 'matched' && opponentTeam) {
+      setLobbyStatus(`${opponentTeam.name} selected your team. Press Continue to start game setup.`);
+      return;
+    }
+
+    if (currentTeam.status === 'matched' && currentTeam.setupConfirmed && opponentTeam?.setupConfirmed) {
+      setLobbyStatus('2/2 users are ready. Continue to game setup.');
+      return;
+    }
+
+    if (currentTeam.status === 'matched' && previousOpponent && !previousOpponent.setupConfirmed && opponentTeam?.setupConfirmed && !currentTeam.setupConfirmed) {
+      setLobbyStatus(`${opponentTeam.name} is ready. Press Continue to start game setup.`);
+    }
+  }
+
   async function leaveCurrentLobbyTeam() {
     const lobbyState = currentLobbyState;
     const currentTeam = getCurrentLobbyTeam(lobbyState);
@@ -1062,6 +1098,7 @@ document.addEventListener('DOMContentLoaded', function() {
       gameState.matchStarted = false;
       hideGameResultOverlay();
       drawGame(true);
+      syncArenaDecorations();
       updateDiffAnswerUi();
       return;
     }
@@ -1079,6 +1116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (gameBoard) gameBoard.classList.remove('is-idle');
     setGameBoardVisible(true);
     drawGame(!gameState.gameActive);
+    syncArenaDecorations();
     showGameResultOverlay();
     updateDiffAnswerUi();
   }
@@ -1320,6 +1358,7 @@ document.addEventListener('DOMContentLoaded', function() {
       teamToSave = {
         ...currentTeam,
         name: requestedName,
+        difficulty: gameState.selectedLevel,
         updatedAt: now
       };
     } else {
@@ -1327,6 +1366,7 @@ document.addEventListener('DOMContentLoaded', function() {
         id: createSessionId('team'),
         ownerId: sessionOwnerId,
         name: requestedName,
+        difficulty: gameState.selectedLevel,
         status: 'waiting',
         opponentId: null,
         slot: null,
@@ -1424,7 +1464,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const lobbyState = currentLobbyState;
     const currentTeam = getCurrentLobbyTeam(lobbyState);
-    const waitingTeams = lobbyState.teams.filter((team) => team.status === 'waiting' && team.id !== currentTeam?.id);
+    const selectedDifficulty = Number(gameState.selectedLevel || 0);
+    const getDifficultyLabel = (difficultyIndex) => DIFFICULTY[Number(difficultyIndex ?? 0)]?.name || 'Basic';
+    const waitingTeams = lobbyState.teams
+      .filter((team) => team.status === 'waiting' && team.id !== currentTeam?.id && Number(team.difficulty ?? 0) === selectedDifficulty)
+      .sort((teamA, teamB) => teamA.name.localeCompare(teamB.name, undefined, { sensitivity: 'base' }));
+    const totalWaitingPages = Math.max(1, Math.ceil(waitingTeams.length / LOBBY_WAITING_TEAMS_PER_PAGE));
+    lobbyWaitingTeamsPage = Math.min(lobbyWaitingTeamsPage, totalWaitingPages);
+    lobbyWaitingTeamsPage = Math.max(1, lobbyWaitingTeamsPage);
+    const waitingTeamsStart = (lobbyWaitingTeamsPage - 1) * LOBBY_WAITING_TEAMS_PER_PAGE;
+    const visibleWaitingTeams = waitingTeams.slice(waitingTeamsStart, waitingTeamsStart + LOBBY_WAITING_TEAMS_PER_PAGE);
 
     if (lobbyTeamNameInput && currentTeam && !lobbyTeamNameInput.value) {
       lobbyTeamNameInput.value = currentTeam.name;
@@ -1458,7 +1507,10 @@ document.addEventListener('DOMContentLoaded', function() {
       lobbyMyTeam.innerHTML = `
         <article class="lobby-card">
           <div class="lobby-card-header">
-            <span class="lobby-team-title">${currentTeam.name}</span>
+            <div class="lobby-team-heading">
+              <span class="lobby-team-title">${currentTeam.name}</span>
+              <span class="lobby-difficulty-badge">${getDifficultyLabel(currentTeam.difficulty)}</span>
+            </div>
             <span class="lobby-badge${currentTeam.status === 'matched' ? ' matched' : ''}">${currentTeam.status === 'matched' ? 'Matched' : 'Waiting'}</span>
           </div>
           <div>${currentTeam.status === 'matched' && opponentTeam ? `Opponent selected: <strong>${opponentTeam.name}</strong>` : 'Waiting for another team to choose this matchup.'}</div>
@@ -1467,19 +1519,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (!waitingTeams.length) {
-      lobbyTeamsList.innerHTML = '<p class="lobby-empty">No teams are waiting right now.</p>';
+      lobbyWaitingTeamsPage = 1;
+      lobbyTeamsList.innerHTML = '<p class="lobby-empty">No teams are waiting for this difficulty right now.</p>';
     } else {
-      lobbyTeamsList.innerHTML = waitingTeams.map((team) => `
+      const waitingTeamsSummary = `Showing ${waitingTeamsStart + 1}-${Math.min(waitingTeamsStart + visibleWaitingTeams.length, waitingTeams.length)} of ${waitingTeams.length} teams`;
+      const paginationControls = totalWaitingPages > 1
+        ? `
+          <div class="lobby-pagination">
+            <div class="lobby-pagination-summary">${waitingTeamsSummary}</div>
+            <div class="lobby-pagination-actions">
+              <button type="button" id="lobby-page-prev-btn" class="lobby-secondary-btn" ${lobbyWaitingTeamsPage === 1 ? 'disabled' : ''}>Previous</button>
+              <span class="lobby-pagination-page">Page ${lobbyWaitingTeamsPage} of ${totalWaitingPages}</span>
+              <button type="button" id="lobby-page-next-btn" class="lobby-secondary-btn" ${lobbyWaitingTeamsPage === totalWaitingPages ? 'disabled' : ''}>Next</button>
+            </div>
+          </div>`
+        : `<div class="lobby-pagination lobby-pagination-single"><div class="lobby-pagination-summary">${waitingTeamsSummary}</div></div>`;
+
+      lobbyTeamsList.innerHTML = visibleWaitingTeams.map((team) => `
         <article class="lobby-card">
           <div class="lobby-card-header">
-            <span class="lobby-team-title">${team.name}</span>
+            <div class="lobby-team-heading">
+              <span class="lobby-team-title">${team.name}</span>
+              <span class="lobby-difficulty-badge">${getDifficultyLabel(team.difficulty)}</span>
+            </div>
             <span class="lobby-badge">Waiting</span>
           </div>
           <div>Available to be selected as your opponent.</div>
           <div class="lobby-card-actions">
             <button type="button" class="lobby-select-team-btn" data-team-id="${team.id}" ${currentTeam && currentTeam.status === 'waiting' ? '' : 'disabled'}>Play This Team</button>
           </div>
-        </article>`).join('');
+        </article>`).join('') + paginationControls;
     }
 
     const continueBtn = document.getElementById('lobby-continue-btn');
@@ -1514,6 +1583,26 @@ document.addEventListener('DOMContentLoaded', function() {
         selectOpponentTeam(button.dataset.teamId);
       });
     });
+
+    const prevPageBtn = document.getElementById('lobby-page-prev-btn');
+    if (prevPageBtn) {
+      prevPageBtn.addEventListener('click', function() {
+        if (lobbyWaitingTeamsPage > 1) {
+          lobbyWaitingTeamsPage -= 1;
+          renderLobby();
+        }
+      });
+    }
+
+    const nextPageBtn = document.getElementById('lobby-page-next-btn');
+    if (nextPageBtn) {
+      nextPageBtn.addEventListener('click', function() {
+        if (lobbyWaitingTeamsPage < totalWaitingPages) {
+          lobbyWaitingTeamsPage += 1;
+          renderLobby();
+        }
+      });
+    }
   }
 
   function openLobbyPanel(statusMessage = 'Create a team to start the match lobby.') {
@@ -1532,8 +1621,10 @@ document.addEventListener('DOMContentLoaded', function() {
       stopLobbySubscription();
     }
     stopLobbySubscription = subscribeToLobby((lobbyState) => {
+      const previousLobbyState = currentLobbyState;
       currentLobbyState = lobbyState;
       if (lobbyPanel && lobbyPanel.style.display !== 'none') {
+        syncLobbyStatusFromState(previousLobbyState);
         renderLobby();
         if (isLobbyReadyForDiffSetup()) {
           openDiffTeamSetup();
@@ -1663,6 +1754,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (answerArea) answerArea.style.display = 'none';
         setGameBoardVisible(true);
         drawGame(true);
+        syncArenaDecorations();
         setLobbyStatus('Waiting for the shared match state...');
         return;
       }
@@ -1679,6 +1771,7 @@ document.addEventListener('DOMContentLoaded', function() {
       gameCanvas.height = 400;
       startGame();
       drawGame();
+      syncArenaDecorations();
       if (newGameBtn) newGameBtn.style.display = 'none';
     };
   }
@@ -1697,12 +1790,14 @@ document.addEventListener('DOMContentLoaded', function() {
       updateCalculatorEntry(inputTeam, `${gameState.currentAnswer[inputTeam]}${e.key}`);
     }
     drawGame();
+    syncArenaDecorations();
   });
 
   // Show new game button at game over
   const originalDrawGame = drawGame;
   function drawGameWithNewGameBtn(gameOver = false) {
     originalDrawGame(gameOver);
+    syncArenaDecorations();
     // Show/hide answer area based on game state
     const answerArea = document.getElementById('answer-area');
     if (answerArea) answerArea.style.display = (gameOver || !gameState.gameActive) ? 'none' : '';
@@ -1716,7 +1811,6 @@ document.addEventListener('DOMContentLoaded', function() {
     showGameResultOverlay();
   }
   // Override drawGame globally
-  drawGame = drawGameWithNewGameBtn;
   window.drawGame = drawGameWithNewGameBtn;
 
   if (gameResultLobbyBtn) {

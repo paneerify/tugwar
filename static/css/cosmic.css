@@ -1200,6 +1200,12 @@ input {
   color: var(--text-main);
 }
 
+.lobby-difficulty-badge {
+  background: rgba(123, 223, 246, 0.14);
+  color: #dff8ff;
+  border: 1px solid rgba(123, 223, 246, 0.2);
+}
+
 .skribbl-form-team-card input[type="text"],
 .lobby-field input {
   border-radius: 16px;
@@ -1216,6 +1222,18 @@ input {
 .lobby-status {
   background: rgba(123, 223, 246, 0.14);
   color: #dff8ff;
+}
+
+.lobby-pagination-summary,
+.lobby-pagination-page {
+  color: var(--text-dim);
+}
+
+.lobby-pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .game-btn-row {
