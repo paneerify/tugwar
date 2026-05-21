@@ -535,6 +535,14 @@ document.addEventListener('DOMContentLoaded', function() {
       answerSign.className = signClass;
     }
 
+    function showSubmissionFeedback(correct) {
+      showAnswerResult(
+        correct ? 'Correct. Progress made.' : 'Wrong answer.',
+        correct ? '✔' : '✖',
+        correct ? 'correct' : 'wrong'
+      );
+    }
+
     function hideAnswerResult() {
       if (!answerResult) return;
       if (answerResultTimer) {
@@ -579,6 +587,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const answeringTeam = gameState.selectedTeam;
         const isCorrect = String(ans).trim() === String(gameState.currentQuestion[answeringTeam]?.ans || gameState.currentQuestion[0]?.ans);
         playFeedbackSound(isCorrect ? 'clap' : 'aw');
+        showSubmissionFeedback(isCorrect);
         await submitMultiplayerAnswer(ans);
         diffAnswerDrafts[answeringTeam] = '';
         diffAnswerDraftQuestionKeys[answeringTeam] = getQuestionKeyForTeam(gameState, answeringTeam);
@@ -586,6 +595,13 @@ document.addEventListener('DOMContentLoaded', function() {
         answerInput.value = '';
         syncCalculatorUi();
         answerInput.blur();
+        if (!gameState.revealedAnswer) {
+          answerResultTimer = setTimeout(() => {
+            if (!gameState.revealedAnswer) {
+              hideAnswerResult();
+            }
+          }, 1200);
+        }
         return;
       }
       const teamIdx = gameState.tiebreakerActive ? teamOverride : gameState.currentTeam;
@@ -594,7 +610,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const correctAns = questionObj?.ans;
       const correct = (ans !== null && String(ans).trim() === String(correctAns));
       playFeedbackSound(correct ? 'clap' : 'aw');
-      showAnswerResult(`You answered: ${ans}`, correct ? '✔' : '✖', correct ? 'correct' : 'wrong');
+      showSubmissionFeedback(correct);
       handleAnswer(ans, teamIdx);
       gameState.currentAnswer[teamIdx] = '';
       answerInput.value = '';
