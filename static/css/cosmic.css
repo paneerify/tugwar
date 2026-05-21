@@ -726,6 +726,13 @@ input {
   font-size: clamp(1rem, 1.7vw, 1.35rem);
 }
 
+.team-members {
+  margin-top: 0.3rem;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .team-timer {
   color: var(--text-dim);
   font-weight: 600;

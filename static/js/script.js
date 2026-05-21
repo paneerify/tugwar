@@ -350,6 +350,14 @@ document.addEventListener('DOMContentLoaded', function() {
       return gameState.currentAnswer[teamIdx] || '';
     }
 
+    function getLiveAnswerValue(teamIdx) {
+      const display = getTeamDisplay(teamIdx);
+      if (display && typeof display.value === 'string') {
+        return display.value;
+      }
+      return getPendingAnswerValue(teamIdx);
+    }
+
     function getEffectiveTeam(teamOverride = null) {
       if (teamOverride !== null && teamOverride !== undefined) {
         return teamOverride;
@@ -564,7 +572,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!answerInput) return;
       const effectiveTeam = getEffectiveTeam(teamOverride);
       if (effectiveTeam === null || effectiveTeam === undefined) return;
-      answerInput.value = getPendingAnswerValue(effectiveTeam);
+      answerInput.value = getLiveAnswerValue(effectiveTeam);
       const ans = answerInput.value.trim();
       if (ans === '') return;
       if (gameState.playMode === 'diff') {
@@ -707,6 +715,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // HERO SECTION TEAM/TIMER UPDATE
   const heroTeam1Name = document.getElementById('hero-team1-name');
   const heroTeam2Name = document.getElementById('hero-team2-name');
+  const heroTeam1Members = document.getElementById('hero-team1-members');
+  const heroTeam2Members = document.getElementById('hero-team2-members');
   const heroTeam1Timer = document.getElementById('hero-team1-timer');
   const heroTeam2Timer = document.getElementById('hero-team2-timer');
 
@@ -714,6 +724,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let m = Math.floor(sec/60);
     let s = sec%60;
     return `${m}:${s.toString().padStart(2,'0')}`;
+  }
+
+  function formatTeamMembers(teamIdx) {
+    const members = Array.isArray(gameState.playerNames[teamIdx])
+      ? gameState.playerNames[teamIdx].map((name) => String(name || '').trim()).filter(Boolean)
+      : [];
+    return members.length ? `Players: ${members.join(', ')}` : 'Players: -';
   }
 
   function updateHeroSection() {
@@ -763,6 +780,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (heroTeam1Name) heroTeam1Name.textContent = gameState.teamNames[0] || 'Team 1';
     if (heroTeam2Name) heroTeam2Name.textContent = gameState.teamNames[1] || 'Team 2';
+    if (heroTeam1Members) heroTeam1Members.textContent = formatTeamMembers(0);
+    if (heroTeam2Members) heroTeam2Members.textContent = formatTeamMembers(1);
     if (heroTeam1Timer) heroTeam1Timer.textContent = formatTime(gameState.teamTimeLeft[0]);
     if (heroTeam2Timer) heroTeam2Timer.textContent = formatTime(gameState.teamTimeLeft[1]);
     const heroTeam1Score = document.getElementById('hero-team1-score');
@@ -1171,12 +1190,15 @@ document.addEventListener('DOMContentLoaded', function() {
     applyGameSnapshot(sessionState.game);
     if (draftTeam !== null && draftTeam !== undefined) {
       const nextQuestionKey = getQuestionKeyForTeam(sessionState.game, draftTeam);
-      if (nextQuestionKey && nextQuestionKey === previousQuestionKey) {
+      if (previousQuestionKey && (!nextQuestionKey || nextQuestionKey === previousQuestionKey)) {
         gameState.currentAnswer[draftTeam] = diffAnswerDrafts[draftTeam] || '';
-      } else {
+      } else if (nextQuestionKey && previousQuestionKey && nextQuestionKey !== previousQuestionKey) {
         diffAnswerDrafts[draftTeam] = '';
+        gameState.currentAnswer[draftTeam] = '';
       }
-      diffAnswerDraftQuestionKeys[draftTeam] = nextQuestionKey;
+      if (nextQuestionKey) {
+        diffAnswerDraftQuestionKeys[draftTeam] = nextQuestionKey;
+      }
     }
     modeSelectDiv.style.display = 'none';
     if (lobbyPanel) lobbyPanel.style.display = 'none';
