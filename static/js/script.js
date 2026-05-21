@@ -118,6 +118,11 @@ function clearLiveMatchState() {
   gameState.pendingNextTeam = null;
 }
 
+function dismissGameResultOverlay() {
+  clearLiveMatchState();
+  hideGameResultOverlay();
+}
+
 function startGame() {
   hideGameResultOverlay();
   gameState.matchStarted = false;
@@ -916,6 +921,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function waitInLobbyAfterGame() {
+    dismissGameResultOverlay();
     const currentTeam = getCurrentLobbyTeam(currentLobbyState);
     stopSessionSync();
     if (currentTeam) {
@@ -1635,6 +1641,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (gameResultLeaveBtn) {
     gameResultLeaveBtn.addEventListener('click', async function() {
+      dismissGameResultOverlay();
       await leaveCurrentLobbyTeam();
       stopSessionSync();
       stopLobbyExpiryWatcher();
@@ -1650,7 +1657,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (gameCanvas) gameCanvas.style.display = 'none';
       if (newGameBtn) newGameBtn.style.display = 'none';
       setGameBoardVisible(false);
-      hideGameResultOverlay();
       showModeSelection();
       updateHeroSection();
     });
@@ -1658,6 +1664,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (gameResultExitBtn) {
     gameResultExitBtn.addEventListener('click', async function() {
+      dismissGameResultOverlay();
       await leaveCurrentLobbyTeam();
       stopSessionSync();
       stopLobbyExpiryWatcher();
@@ -1673,7 +1680,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (gameCanvas) gameCanvas.style.display = 'none';
       if (newGameBtn) newGameBtn.style.display = 'none';
       setGameBoardVisible(false);
-      hideGameResultOverlay();
       showWelcomeScreen();
       updateHeroSection();
     });
