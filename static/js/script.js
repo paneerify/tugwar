@@ -628,7 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
         questionDisplay.textContent = `${gameState.revealedAnswer.question} = ${gameState.revealedAnswer.answer}`;
       } else if (gameState.currentQuestion[displayTeam]?.q) {
         questionDisplay.textContent = gameState.currentQuestion[displayTeam].q;
-      } else if (!gameState.gameActive) {
+      } else if (gameState.gameOver) {
         const winningTeam = gameState.teamScores[0] === gameState.teamScores[1]
           ? 'Draw Game'
           : `${gameState.teamNames[gameState.teamScores[0] > gameState.teamScores[1] ? 0 : 1]} Wins`;
