@@ -694,6 +694,10 @@
 	animation: resultOverlayFade 0.35s ease-out;
 }
 
+.game-result-overlay[hidden] {
+	display: none !important;
+}
+
 .game-result-card {
 	position: relative;
 	width: min(100%, 560px);
@@ -738,6 +742,10 @@
 	flex-wrap: wrap;
 	justify-content: center;
 	gap: 0.75rem;
+}
+
+.game-result-actions[hidden] {
+	display: none !important;
 }
 
 .game-result-actions button {
