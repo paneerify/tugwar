@@ -3,6 +3,7 @@ import { firebaseConfig, isFirebaseConfigured, normalizedDatabaseUrl } from './f
 const LOCAL_LOBBY_STORAGE_KEY = 'tugwar-diff-lobby-v1';
 const LOCAL_SESSION_PREFIX = 'tugwar-session-';
 const LOBBY_STALE_MS = 1000 * 60 * 60 * 4;
+const MATCH_RESPONSE_TIMEOUT_MS = 1000 * 60;
 
 let firebaseApiPromise = null;
 let localListeners = [];
@@ -65,6 +66,16 @@ function writeLocalLobbyState(lobbyState) {
   localListeners.forEach((listener) => listener(normalized));
 }
 
+function resetMatchedTeam(team, now = Date.now()) {
+  team.status = 'waiting';
+  team.opponentId = null;
+  team.slot = null;
+  team.sessionId = null;
+  team.setupConfirmed = false;
+  team.matchedAt = null;
+  team.updatedAt = now;
+}
+
 async function getFirebaseApi() {
   if (!isFirebaseConfigured) {
     return null;
@@ -124,7 +135,7 @@ function chooseMutationRunner() {
 }
 
 export function getMultiplayerBackendLabel() {
-  return isFirebaseConfigured ? 'Firebase Realtime Database' : 'Local browser storage';
+  return isFirebaseConfigured ? 'Network' : 'Local';
 }
 
 export async function getLobbySnapshot() {
@@ -157,14 +168,31 @@ export async function removeLobbyTeam(teamId) {
     if (currentTeam.opponentId) {
       const opponentTeam = teams.find((team) => team.id === currentTeam.opponentId);
       if (opponentTeam) {
-        opponentTeam.status = 'waiting';
-        opponentTeam.opponentId = null;
-        opponentTeam.slot = null;
-        opponentTeam.setupConfirmed = false;
-        opponentTeam.updatedAt = Date.now();
+        resetMatchedTeam(opponentTeam);
       }
     }
     return { teams: teams.filter((team) => team.id !== teamId) };
+  });
+}
+
+export async function returnTeamToLobby(teamId) {
+  const runMutation = chooseMutationRunner();
+  return runMutation((lobbyState) => {
+    const teams = lobbyState.teams.map((team) => ({ ...team }));
+    const currentTeam = teams.find((team) => team.id === teamId);
+    if (!currentTeam) {
+      return { teams };
+    }
+
+    if (currentTeam.opponentId) {
+      const opponentTeam = teams.find((team) => team.id === currentTeam.opponentId);
+      if (opponentTeam) {
+        resetMatchedTeam(opponentTeam);
+      }
+    }
+
+    resetMatchedTeam(currentTeam);
+    return { teams };
   });
 }
 
@@ -177,20 +205,23 @@ export async function matchLobbyTeams(teamId, opponentId) {
     if (!currentTeam || !opponentTeam || currentTeam.status !== 'waiting' || opponentTeam.status !== 'waiting') {
       return { teams };
     }
-    const sessionId = currentTeam.sessionId || opponentTeam.sessionId || `${currentTeam.id}-${opponentTeam.id}`;
+    const now = Date.now();
+    const sessionId = `${currentTeam.id}-${opponentTeam.id}-${now}`;
     currentTeam.status = 'matched';
     currentTeam.opponentId = opponentTeam.id;
     currentTeam.slot = 0;
     currentTeam.sessionId = sessionId;
     currentTeam.setupConfirmed = false;
-    currentTeam.updatedAt = Date.now();
+    currentTeam.matchedAt = now;
+    currentTeam.updatedAt = now;
 
     opponentTeam.status = 'matched';
     opponentTeam.opponentId = currentTeam.id;
     opponentTeam.slot = 1;
     opponentTeam.sessionId = sessionId;
     opponentTeam.setupConfirmed = false;
-    opponentTeam.updatedAt = Date.now();
+    opponentTeam.matchedAt = now;
+    opponentTeam.updatedAt = now;
     return { teams };
   });
 }
@@ -206,6 +237,38 @@ export async function setLobbyTeamSetupConfirmed(teamId, setupConfirmed) {
     currentTeam.setupConfirmed = Boolean(setupConfirmed);
     currentTeam.updatedAt = Date.now();
     return { teams };
+  });
+}
+
+export async function releaseExpiredLobbyMatches() {
+  const runMutation = chooseMutationRunner();
+  return runMutation((lobbyState) => {
+    const now = Date.now();
+    const teams = lobbyState.teams.map((team) => ({ ...team }));
+    let changed = false;
+
+    teams.forEach((team) => {
+      if (team.status !== 'matched' || !team.opponentId || !team.matchedAt) {
+        return;
+      }
+      if (now - team.matchedAt < MATCH_RESPONSE_TIMEOUT_MS) {
+        return;
+      }
+
+      const opponentTeam = teams.find((entry) => entry.id === team.opponentId);
+      const bothReady = Boolean(team.setupConfirmed) && Boolean(opponentTeam?.setupConfirmed);
+      if (bothReady) {
+        return;
+      }
+
+      resetMatchedTeam(team, now);
+      if (opponentTeam) {
+        resetMatchedTeam(opponentTeam, now);
+      }
+      changed = true;
+    });
+
+    return changed ? { teams } : lobbyState;
   });
 }
 

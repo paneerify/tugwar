@@ -2,7 +2,7 @@ import { getTeam1PlayersDiv, getTeam2PlayersDiv, getTeamForm, getGameCanvas, get
 import { gameState, POINTS_TO_WIN } from './modules/gameState.js';
 import { createPlayerInputs, setRopePosition } from './modules/ui.js';
 import { applyGameSnapshot, buildInitialGameSnapshot, drawGame, endGame, handleAnswer, nextQuestion, resolveSubmittedAnswer, tickGameSnapshot } from './modules/gameLogic.js';
-import { getLobbySnapshot, getMultiplayerBackendLabel, getSessionSnapshot, matchLobbyTeams, mutateSessionState, removeLobbyTeam, saveLobbyTeam, saveSessionTeam, setLobbyTeamSetupConfirmed, subscribeToLobby, subscribeToSession } from './modules/multiplayerBackend.js';
+import { getLobbySnapshot, getMultiplayerBackendLabel, getSessionSnapshot, matchLobbyTeams, mutateSessionState, releaseExpiredLobbyMatches, removeLobbyTeam, returnTeamToLobby, saveLobbyTeam, saveSessionTeam, setLobbyTeamSetupConfirmed, subscribeToLobby, subscribeToSession } from './modules/multiplayerBackend.js';
 
 const SESSION_OWNER_KEY = 'tugwar-diff-owner-v1';
 const SESSION_TEAM_KEY = 'tugwar-diff-team-v1';
@@ -13,6 +13,7 @@ let currentSessionId = null;
 let stopSessionSubscription = null;
 let hostTickInterval = null;
 let hostTickPending = false;
+let lobbyExpiryInterval = null;
 
 function createSessionId(prefix) {
   if (window.crypto && typeof window.crypto.randomUUID === 'function') {
@@ -92,6 +93,7 @@ function setGameBoardVisibleFromStart(visible) {
 }
 
 function startGame() {
+  hideGameResultOverlay();
   // Always use fallback values for team names and player names
   if (gameState.playMode === 'same') {
     const team1NameInput = document.getElementById('team1-name');
@@ -112,6 +114,8 @@ function startGame() {
     gameState.questionTimeLeft[0] = 0; gameState.questionTimeLeft[1] = 0;
     gameState.teamTimeLeft[0] = 150; gameState.teamTimeLeft[1] = 150;
     gameState.gameActive = true;
+    gameState.winner = null;
+    gameState.gameOver = false;
     if (gameState.gameTimer) clearInterval(gameState.gameTimer);
     gameState.currentTeam = 0;
     gameState.gameTimer = setInterval(() => {
@@ -146,6 +150,8 @@ function startGame() {
     gameState.questionTimeLeft[t] = 0;
     gameState.teamTimeLeft[t] = 150;
     gameState.gameActive = true;
+    gameState.winner = null;
+    gameState.gameOver = false;
     if (gameState.gameTimer) clearInterval(gameState.gameTimer);
     gameState.gameTimer = setInterval(() => {
       if (gameState.teamTimeLeft[t] > 0) {
@@ -562,6 +568,7 @@ document.addEventListener('DOMContentLoaded', function() {
       homeBtn.addEventListener('click', async function() {
         await leaveCurrentLobbyTeam();
         stopSessionSync();
+        stopLobbyExpiryWatcher();
         if (stopLobbySubscription) {
           stopLobbySubscription();
           stopLobbySubscription = null;
@@ -575,6 +582,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (newGameBtn) newGameBtn.style.display = 'none';
         setGameBoardVisible(false);
         showWelcomeScreen();
+        hideGameResultOverlay();
         updateHeroSection();
       });
     }
@@ -692,6 +700,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         await leaveCurrentLobbyTeam();
         stopSessionSync();
+        stopLobbyExpiryWatcher();
         if (stopLobbySubscription) {
           stopLobbySubscription();
           stopLobbySubscription = null;
@@ -710,6 +719,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resetDisplayedAnswers();
         setGameBoardVisible(false);
         showWelcomeScreen();
+        hideGameResultOverlay();
         updateHeroSection();
       });
     }
@@ -743,6 +753,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const createLobbyTeamBtn = document.getElementById('create-lobby-team-btn');
   const lobbyStatus = document.getElementById('lobby-status');
   const lobbyBackendIndicator = document.getElementById('lobby-backend-indicator');
+  const gameResultOverlay = document.getElementById('game-result-overlay');
+  const gameResultKicker = document.getElementById('game-result-kicker');
+  const gameResultTitle = document.getElementById('game-result-title');
+  const gameResultMessage = document.getElementById('game-result-message');
+  const gameResultActions = document.getElementById('game-result-actions');
+  const gameResultLobbyBtn = document.getElementById('game-result-lobby-btn');
+  const gameResultLeaveBtn = document.getElementById('game-result-leave-btn');
+  const gameResultExitBtn = document.getElementById('game-result-exit-btn');
   const lobbyMyTeam = document.getElementById('lobby-my-team');
   const lobbyTeamsList = document.getElementById('lobby-teams-list');
   const backToModeBtn = document.getElementById('back-to-mode-btn');
@@ -779,7 +797,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function setLobbyBackendIndicator() {
     if (!lobbyBackendIndicator) return;
-    lobbyBackendIndicator.textContent = `Lobby backend: ${getMultiplayerBackendLabel()}`;
+    lobbyBackendIndicator.textContent = getMultiplayerBackendLabel();
+  }
+
+  function hideGameResultOverlay() {
+    if (!gameResultOverlay) return;
+    gameResultOverlay.hidden = true;
+  }
+
+  function showGameResultOverlay() {
+    if (!gameResultOverlay || gameState.gameActive || !gameState.gameOver) {
+      hideGameResultOverlay();
+      return;
+    }
+
+    const isDiffMode = gameState.playMode === 'diff';
+    if (gameResultActions) {
+      gameResultActions.hidden = !isDiffMode;
+    }
+
+    if (gameState.winner === null) {
+      gameResultKicker.textContent = 'Match Finished';
+      gameResultTitle.textContent = 'Match Draw';
+      gameResultMessage.textContent = 'Both teams finished even. Match Draw.';
+    } else {
+      const winnerName = gameState.teamNames[gameState.winner] || `Team ${gameState.winner + 1}`;
+      gameResultKicker.textContent = winnerName;
+      gameResultTitle.textContent = 'Congratulations';
+      gameResultMessage.textContent = `${winnerName} wins the match.`;
+    }
+
+    gameResultOverlay.hidden = false;
+  }
+
+  function stopLobbyExpiryWatcher() {
+    if (lobbyExpiryInterval) {
+      clearInterval(lobbyExpiryInterval);
+      lobbyExpiryInterval = null;
+    }
+  }
+
+  async function sweepExpiredLobbyMatches() {
+    const currentTeamBefore = getCurrentLobbyTeam(currentLobbyState);
+    currentLobbyState = await releaseExpiredLobbyMatches();
+    const currentTeamAfter = getCurrentLobbyTeam(currentLobbyState);
+
+    if (currentTeamBefore?.status === 'matched' && currentTeamAfter?.status === 'waiting' && !currentTeamAfter.opponentId) {
+      setLobbyStatus('Opponent did not respond in time. Your team is back in the lobby.');
+    }
+
+    renderLobby();
+  }
+
+  function startLobbyExpiryWatcher() {
+    stopLobbyExpiryWatcher();
+    lobbyExpiryInterval = setInterval(() => {
+      sweepExpiredLobbyMatches().catch(() => {});
+    }, 5000);
   }
 
   function getCurrentLobbyTeam(lobbyState = currentLobbyState) {
@@ -803,8 +877,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  async function waitInLobbyAfterGame() {
+    const currentTeam = getCurrentLobbyTeam(currentLobbyState);
+    stopSessionSync();
+    if (currentTeam) {
+      currentLobbyState = await returnTeamToLobby(currentTeam.id);
+    }
+    resetGameState();
+    resetDisplayedAnswers();
+    if (gameCanvas) gameCanvas.style.display = 'none';
+    setGameBoardVisible(false);
+    openLobbyPanel('Your team is back in the lobby and waiting for a new opponent.');
+  }
+
   function stopHostTicker() {
     if (hostTickInterval) {
+    showGameResultOverlay();
       clearInterval(hostTickInterval);
       hostTickInterval = null;
     }
@@ -855,6 +943,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function applySessionState(sessionState) {
     currentSessionState = sessionState;
     if (!sessionState?.game) {
+      hideGameResultOverlay();
       updateDiffAnswerUi();
       return;
     }
@@ -872,6 +961,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (gameBoard) gameBoard.classList.remove('is-idle');
     setGameBoardVisible(true);
     drawGame(!gameState.gameActive);
+    showGameResultOverlay();
     updateDiffAnswerUi();
   }
 
@@ -1060,6 +1150,7 @@ document.addEventListener('DOMContentLoaded', function() {
     currentSessionId = currentTeam.sessionId || null;
 
     modeSelectDiv.style.display = 'none';
+    stopLobbyExpiryWatcher();
     if (lobbyPanel) lobbyPanel.style.display = 'none';
     teamForm.style.display = '';
     gameCanvas.style.display = 'none';
@@ -1290,7 +1381,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  function openLobbyPanel() {
+  function openLobbyPanel(statusMessage = 'Create a team to start the match lobby.') {
     gameState.playMode = 'diff';
     stopSessionSync();
     modeSelectDiv.style.display = 'none';
@@ -1298,8 +1389,10 @@ document.addEventListener('DOMContentLoaded', function() {
     gameCanvas.style.display = 'none';
     if (lobbyPanel) lobbyPanel.style.display = '';
     hideFormError();
+    hideGameResultOverlay();
     setLobbyBackendIndicator();
-    setLobbyStatus(`Lobby backend: ${getMultiplayerBackendLabel()}.`);
+    setLobbyStatus(statusMessage);
+    startLobbyExpiryWatcher();
     if (stopLobbySubscription) {
       stopLobbySubscription();
     }
@@ -1311,6 +1404,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     getLobbySnapshot().then((lobbyState) => {
       currentLobbyState = lobbyState;
+      return sweepExpiredLobbyMatches();
+    }).then(() => {
       renderLobby();
     }).catch((error) => {
       setLobbyStatus(describeLobbyError(error, 'Could not read the Firebase lobby.'));
@@ -1324,6 +1419,7 @@ document.addEventListener('DOMContentLoaded', function() {
       gameState.playMode = 'same';
       await leaveCurrentLobbyTeam();
       stopSessionSync();
+      stopLobbyExpiryWatcher();
       if (stopLobbySubscription) {
         stopLobbySubscription();
         stopLobbySubscription = null;
@@ -1362,6 +1458,7 @@ document.addEventListener('DOMContentLoaded', function() {
     backToModeBtn.addEventListener('click', async function() {
       await leaveCurrentLobbyTeam();
       stopSessionSync();
+      stopLobbyExpiryWatcher();
       if (stopLobbySubscription) {
         stopLobbySubscription();
         stopLobbySubscription = null;
@@ -1424,6 +1521,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       modeSelectDiv.style.display = 'none';
+      stopLobbyExpiryWatcher();
       if (stopLobbySubscription) {
         stopLobbySubscription();
         stopLobbySubscription = null;
@@ -1463,20 +1561,75 @@ document.addEventListener('DOMContentLoaded', function() {
     const answerArea = document.getElementById('answer-area');
     if (answerArea) answerArea.style.display = (gameOver || !gameState.gameActive) ? 'none' : '';
     if (newGameBtn) {
-      if (gameOver || !gameState.gameActive) {
+      if ((gameOver || !gameState.gameActive) && gameState.playMode !== 'diff') {
         newGameBtn.style.display = 'inline-block';
       } else {
         newGameBtn.style.display = 'none';
       }
     }
+    showGameResultOverlay();
   }
   // Override drawGame globally
   window.drawGame = drawGameWithNewGameBtn;
+
+  if (gameResultLobbyBtn) {
+    gameResultLobbyBtn.addEventListener('click', async function() {
+      await waitInLobbyAfterGame();
+      updateHeroSection();
+    });
+  }
+
+  if (gameResultLeaveBtn) {
+    gameResultLeaveBtn.addEventListener('click', async function() {
+      await leaveCurrentLobbyTeam();
+      stopSessionSync();
+      stopLobbyExpiryWatcher();
+      if (stopLobbySubscription) {
+        stopLobbySubscription();
+        stopLobbySubscription = null;
+      }
+      resetGameState();
+      resetDisplayedAnswers();
+      if (modeSelectDiv) modeSelectDiv.style.display = '';
+      if (lobbyPanel) lobbyPanel.style.display = 'none';
+      if (teamForm) teamForm.style.display = 'none';
+      if (gameCanvas) gameCanvas.style.display = 'none';
+      if (newGameBtn) newGameBtn.style.display = 'none';
+      setGameBoardVisible(false);
+      hideGameResultOverlay();
+      showModeSelection();
+      updateHeroSection();
+    });
+  }
+
+  if (gameResultExitBtn) {
+    gameResultExitBtn.addEventListener('click', async function() {
+      await leaveCurrentLobbyTeam();
+      stopSessionSync();
+      stopLobbyExpiryWatcher();
+      if (stopLobbySubscription) {
+        stopLobbySubscription();
+        stopLobbySubscription = null;
+      }
+      resetGameState();
+      resetDisplayedAnswers();
+      if (modeSelectDiv) modeSelectDiv.style.display = '';
+      if (lobbyPanel) lobbyPanel.style.display = 'none';
+      if (teamForm) teamForm.style.display = 'none';
+      if (gameCanvas) gameCanvas.style.display = 'none';
+      if (newGameBtn) newGameBtn.style.display = 'none';
+      setGameBoardVisible(false);
+      hideGameResultOverlay();
+      showWelcomeScreen();
+      updateHeroSection();
+    });
+  }
 
   if (newGameBtn) {
     newGameBtn.addEventListener('click', async function() {
       await leaveCurrentLobbyTeam();
       stopSessionSync();
+      stopLobbyExpiryWatcher();
       if (stopLobbySubscription) {
         stopLobbySubscription();
         stopLobbySubscription = null;
@@ -1491,6 +1644,7 @@ document.addEventListener('DOMContentLoaded', function() {
       resetDisplayedAnswers();
       setGameBoardVisible(false);
       showWelcomeScreen();
+      hideGameResultOverlay();
     });
   }
 });

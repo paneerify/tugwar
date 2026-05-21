@@ -46,6 +46,17 @@ function finishGame(snapshot, winner = null) {
     return snapshot;
 }
 
+function resolveMercyRule(snapshot) {
+    const leadingTeam = snapshot.teamScores[0] > snapshot.teamScores[1] ? 0 : 1;
+    const trailingTeam = 1 - leadingTeam;
+
+    if (snapshot.teamScores[leadingTeam] > 30 && snapshot.teamScores[trailingTeam] === 0) {
+        return finishGame(snapshot, leadingTeam);
+    }
+
+    return null;
+}
+
 function startFreshQuestion(snapshot, teamIdx) {
     const questionData = generateQuestionForTeam(teamIdx, snapshot);
     snapshot.currentTeam = teamIdx;
@@ -115,6 +126,8 @@ export function applyGameSnapshot(snapshot) {
     gameState.revealAnswerTimeLeft = snapshot.revealAnswerTimeLeft || 0;
     gameState.pendingNextTeam = snapshot.pendingNextTeam ?? null;
     gameState.selectedLevel = snapshot.selectedLevel ?? 0;
+    gameState.winner = snapshot.winner ?? null;
+    gameState.gameOver = Boolean(snapshot.gameOver);
 }
 
 export function resolveSubmittedAnswer(snapshot, ans, answeringTeam = snapshot.currentTeam) {
@@ -151,11 +164,22 @@ export function resolveSubmittedAnswer(snapshot, ans, answeringTeam = snapshot.c
             return finishGame(nextState, teamIdx);
         }
 
+        const mercyResult = resolveMercyRule(nextState);
+        if (mercyResult) {
+            return mercyResult;
+        }
+
         const nextTeam = 1 - teamIdx;
         return startFreshQuestion(nextState, nextTeam);
     } else {
         const penalty = timedOut ? 1 : 5;
         nextState.teamScores[teamIdx] = Math.max(0, nextState.teamScores[teamIdx] - penalty);
+
+        const mercyResult = resolveMercyRule(nextState);
+        if (mercyResult) {
+            return mercyResult;
+        }
+
         const nextTeam = 1 - teamIdx;
         if (nextState.questionAttemptedBy[nextTeam]) {
             return queueAnswerReveal(nextState, nextState.currentQuestion[teamIdx], nextTeam);

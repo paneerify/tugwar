@@ -25,7 +25,9 @@ export const gameState = {
     pendingNextTeam: null,
     selectedLevel: 0,
     playMode: null,
-    selectedTeam: null
+    selectedTeam: null,
+    winner: null,
+    gameOver: false
 };
 
 export function resetGameState() {
@@ -53,4 +55,6 @@ export function resetGameState() {
     gameState.selectedLevel = 0;
     gameState.playMode = null;
     gameState.selectedTeam = null;
+    gameState.winner = null;
+    gameState.gameOver = false;
 }

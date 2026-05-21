@@ -255,6 +255,20 @@
                 </section>
 
                 <canvas id="game-canvas" width="500" height="350" style="display:none;"></canvas>
+                <div id="game-result-overlay" class="game-result-overlay" aria-live="polite" hidden>
+                    <div class="game-result-burst game-result-burst-a" aria-hidden="true"></div>
+                    <div class="game-result-burst game-result-burst-b" aria-hidden="true"></div>
+                    <div class="game-result-card">
+                        <p id="game-result-kicker" class="game-result-kicker">Game Over</p>
+                        <h2 id="game-result-title" class="game-result-title">Congratulations</h2>
+                        <p id="game-result-message" class="game-result-message">Team 1 wins the match.</p>
+                        <div id="game-result-actions" class="game-result-actions" hidden>
+                            <button type="button" id="game-result-lobby-btn">Wait in Lobby</button>
+                            <button type="button" id="game-result-leave-btn" class="lobby-secondary-btn">Leave Lobby</button>
+                            <button type="button" id="game-result-exit-btn" class="secondary-cta">Exit</button>
+                        </div>
+                    </div>
+                </div>
                 <div id="answer-area" class="answer-area" style="display:none;">
                     <label for="answer-input" class="answer-label">Answer</label>
                     <input id="answer-input" type="text" autocomplete="off" placeholder="Type your answer..." />

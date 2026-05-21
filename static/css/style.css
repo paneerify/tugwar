@@ -668,14 +668,143 @@
 
 .lobby-backend-indicator {
 	margin: 0 0 1rem;
-	padding: 0.65rem 0.9rem;
-	border-radius: 10px;
-	background: #fff8e1;
-	border: 1px solid #ffe082;
-	color: #795548;
-	font-size: 0.95rem;
+	padding: 0.45rem 0.9rem;
+	border-radius: 999px;
+	background: #e8f5e9;
+	border: 1px solid #a5d6a7;
+	color: #1b5e20;
+	font-size: 0.85rem;
 	font-weight: 700;
 	text-align: center;
+	display: inline-flex;
+	align-self: center;
+	min-width: 96px;
+	justify-content: center;
+}
+
+.game-result-overlay {
+	position: fixed;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	padding: 1.5rem;
+	background: radial-gradient(circle at top, rgba(255, 241, 118, 0.26), rgba(13, 71, 161, 0.9) 55%, rgba(5, 21, 48, 0.96) 100%);
+	z-index: 1000;
+	overflow: hidden;
+	animation: resultOverlayFade 0.35s ease-out;
+}
+
+.game-result-card {
+	position: relative;
+	width: min(100%, 560px);
+	padding: 2.25rem 1.75rem;
+	border-radius: 28px;
+	text-align: center;
+	background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(227, 242, 253, 0.94));
+	border: 3px solid rgba(255, 213, 79, 0.95);
+	box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+	animation: resultCardPop 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+	z-index: 2;
+}
+
+.game-result-kicker {
+	margin: 0 0 0.6rem;
+	font-size: 0.95rem;
+	font-weight: 700;
+	letter-spacing: 0.3rem;
+	text-transform: uppercase;
+	color: #ef6c00;
+}
+
+.game-result-title {
+	margin: 0;
+	font-size: clamp(2.3rem, 6vw, 4rem);
+	line-height: 1;
+	color: #0d47a1;
+	text-transform: uppercase;
+	text-shadow: 0 4px 18px rgba(13, 71, 161, 0.18);
+}
+
+.game-result-message {
+	margin: 1rem 0 0;
+	font-size: clamp(1.1rem, 2.8vw, 1.5rem);
+	font-weight: 700;
+	color: #1f2933;
+}
+
+.game-result-actions {
+	margin-top: 1.5rem;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.75rem;
+}
+
+.game-result-actions button {
+	width: auto;
+	min-width: 150px;
+	margin: 0;
+}
+
+.game-result-burst {
+	position: absolute;
+	width: 42vw;
+	height: 42vw;
+	max-width: 420px;
+	max-height: 420px;
+	border-radius: 50%;
+	filter: blur(8px);
+	opacity: 0.7;
+	animation: resultBurstPulse 1.4s ease-in-out infinite alternate;
+	z-index: 1;
+}
+
+.game-result-burst-a {
+	top: 8%;
+	left: 10%;
+	background: radial-gradient(circle, rgba(255, 213, 79, 0.9) 0%, rgba(255, 111, 0, 0.35) 42%, transparent 74%);
+}
+
+.game-result-burst-b {
+	right: 8%;
+	bottom: 10%;
+	background: radial-gradient(circle, rgba(41, 182, 246, 0.88) 0%, rgba(25, 118, 210, 0.3) 44%, transparent 72%);
+	animation-delay: 0.3s;
+}
+
+@keyframes resultOverlayFade {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes resultCardPop {
+	0% {
+		transform: scale(0.72) translateY(24px);
+		opacity: 0;
+	}
+	70% {
+		transform: scale(1.04) translateY(-4px);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(1) translateY(0);
+		opacity: 1;
+	}
+}
+
+@keyframes resultBurstPulse {
+	from {
+		transform: scale(0.9);
+		opacity: 0.45;
+	}
+	to {
+		transform: scale(1.12);
+		opacity: 0.8;
+	}
 }
 
 .lobby-setup-row {
