@@ -1033,9 +1033,24 @@ document.addEventListener('DOMContentLoaded', function() {
     currentSessionState = await mutateSessionState(sessionId, (sessionState) => {
       const team0 = sessionState.teams[0];
       const team1 = sessionState.teams[1];
-      if (!team0?.ready || !team1?.ready || sessionState.game) {
+      const bothTeamsReady = Boolean(team0?.ready) && Boolean(team1?.ready);
+      const staleFinishedGame = sessionState.status === 'finished' || Boolean(sessionState.game?.gameOver);
+
+      if (!bothTeamsReady) {
+        if (!staleFinishedGame) {
+          return sessionState;
+        }
+        return {
+          ...sessionState,
+          status: 'setup',
+          game: null
+        };
+      }
+
+      if (sessionState.game && !staleFinishedGame) {
         return sessionState;
       }
+
       return {
         ...sessionState,
         hostOwnerId: sessionState.hostOwnerId || team0.ownerId,
@@ -1169,9 +1184,6 @@ document.addEventListener('DOMContentLoaded', function() {
     gameCanvas.style.display = 'none';
     hideFormError();
     configureDiffTeamForm(currentTeam.slot);
-    if (currentSessionId) {
-      await attachSession(currentSessionId);
-    }
   }
 
   async function createOrUpdateLobbyTeam() {
@@ -1521,8 +1533,8 @@ document.addEventListener('DOMContentLoaded', function() {
           players: selectedPlayers,
           ready: true
         });
-        await attachSession(currentSessionId);
         await ensureSessionStarted(currentSessionId);
+        await attachSession(currentSessionId);
 
         hideFormError();
         teamForm.style.display = 'none';
