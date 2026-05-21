@@ -380,9 +380,14 @@ document.addEventListener('DOMContentLoaded', function() {
       for (let teamIdx = 0; teamIdx < 2; teamIdx++) {
         const active = isTeamInteractive(teamIdx);
         const display = getTeamDisplay(teamIdx);
+        const calculatorShell = cards[teamIdx]?.querySelector('.calculator-shell');
+        const shouldShowAnswerEntry = gameState.playMode !== 'diff' || teamIdx === gameState.selectedTeam;
         cards[teamIdx]?.classList.toggle('is-active', active);
         cards[teamIdx]?.classList.toggle('is-disabled', !active);
         cards[teamIdx]?.classList.toggle('current', !gameState.tiebreakerActive && gameState.currentTeam === teamIdx && gameState.gameActive);
+        if (calculatorShell) {
+          calculatorShell.style.display = shouldShowAnswerEntry ? '' : 'none';
+        }
         if (display) {
           display.readOnly = !active;
         }
@@ -1782,6 +1787,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (!gameState.gameActive) return;
     const inputTeam = gameState.playMode === 'diff' ? gameState.selectedTeam : gameState.currentTeam;
+    if (!isTeamInteractive(inputTeam)) return;
     if (e.key === 'Backspace') {
       updateCalculatorEntry(inputTeam, gameState.currentAnswer[inputTeam].slice(0, -1));
     } else if (e.key === 'Enter') {
