@@ -900,7 +900,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function stopHostTicker() {
     if (hostTickInterval) {
-    showGameResultOverlay();
       clearInterval(hostTickInterval);
       hostTickInterval = null;
     }
