@@ -95,6 +95,7 @@ function setGameBoardVisibleFromStart(visible) {
 
 function startGame() {
   hideGameResultOverlay();
+  gameState.matchStarted = false;
   // Always use fallback values for team names and player names
   if (gameState.playMode === 'same') {
     const team1NameInput = document.getElementById('team1-name');
@@ -115,6 +116,7 @@ function startGame() {
     gameState.questionTimeLeft[0] = 0; gameState.questionTimeLeft[1] = 0;
     gameState.teamTimeLeft[0] = 150; gameState.teamTimeLeft[1] = 150;
     gameState.gameActive = true;
+    gameState.matchStarted = false;
     gameState.winner = null;
     gameState.gameOver = false;
     if (gameState.gameTimer) clearInterval(gameState.gameTimer);
@@ -129,6 +131,7 @@ function startGame() {
       drawGame(!gameState.gameActive);
     }, 1000);
     nextQuestion(gameState.currentTeam);
+    gameState.matchStarted = true;
     drawGame();
     // Show answer input area
     const answerArea = document.getElementById('answer-area');
@@ -151,6 +154,7 @@ function startGame() {
     gameState.questionTimeLeft[t] = 0;
     gameState.teamTimeLeft[t] = 150;
     gameState.gameActive = true;
+    gameState.matchStarted = false;
     gameState.winner = null;
     gameState.gameOver = false;
     if (gameState.gameTimer) clearInterval(gameState.gameTimer);
@@ -165,6 +169,7 @@ function startGame() {
       drawGame();
     }, 1000);
     nextQuestion(t);
+    gameState.matchStarted = true;
     drawGame();
     // Show answer input area
     const answerArea = document.getElementById('answer-area');
@@ -628,7 +633,7 @@ document.addEventListener('DOMContentLoaded', function() {
         questionDisplay.textContent = `${gameState.revealedAnswer.question} = ${gameState.revealedAnswer.answer}`;
       } else if (gameState.currentQuestion[displayTeam]?.q) {
         questionDisplay.textContent = gameState.currentQuestion[displayTeam].q;
-      } else if (gameState.gameOver) {
+      } else if (gameState.matchStarted && gameState.gameOver) {
         const winningTeam = gameState.teamScores[0] === gameState.teamScores[1]
           ? 'Draw Game'
           : `${gameState.teamNames[gameState.teamScores[0] > gameState.teamScores[1] ? 0 : 1]} Wins`;
@@ -808,7 +813,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function showGameResultOverlay() {
-    if (!gameResultOverlay || gameState.gameActive || !gameState.gameOver) {
+    if (!gameResultOverlay || !gameState.matchStarted || gameState.gameActive || !gameState.gameOver) {
       hideGameResultOverlay();
       return;
     }
@@ -950,6 +955,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function applySessionState(sessionState) {
     currentSessionState = sessionState;
     if (!sessionState?.game) {
+      gameState.matchStarted = false;
       hideGameResultOverlay();
       updateDiffAnswerUi();
       return;

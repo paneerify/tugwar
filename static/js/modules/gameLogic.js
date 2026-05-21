@@ -101,6 +101,7 @@ export function buildInitialGameSnapshot(teamNames, playerNames, selectedLevel =
         revealAnswerTimeLeft: 0,
         pendingNextTeam: null,
         selectedLevel,
+        matchStarted: true,
         winner: null,
         gameOver: false
     };
@@ -126,6 +127,7 @@ export function applyGameSnapshot(snapshot) {
     gameState.revealAnswerTimeLeft = snapshot.revealAnswerTimeLeft || 0;
     gameState.pendingNextTeam = snapshot.pendingNextTeam ?? null;
     gameState.selectedLevel = snapshot.selectedLevel ?? 0;
+    gameState.matchStarted = Boolean(snapshot.matchStarted);
     gameState.winner = snapshot.winner ?? null;
     gameState.gameOver = Boolean(snapshot.gameOver);
 }
