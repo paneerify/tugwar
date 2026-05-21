@@ -727,9 +727,9 @@ input {
 }
 
 .team-timer {
-  color: var(--cyan);
-  font-weight: 700;
-  font-size: 0.95rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 0.82rem;
 }
 
 .team-turn-pill {
@@ -881,10 +881,27 @@ input {
 }
 
 .question-timer {
-  margin-top: 10px;
-  color: var(--cyan);
-  font-size: 0.92rem;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.question-timer-label {
+  color: var(--text-dim);
+  font-size: 0.82rem;
   font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.question-timer-value {
+  color: #fff8d7;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 0 18px rgba(245, 201, 106, 0.24);
 }
 
 .rope-labels-row {

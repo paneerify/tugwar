@@ -736,7 +736,8 @@ document.addEventListener('DOMContentLoaded', function() {
       const timeValue = gameState.revealedAnswer
         ? gameState.revealAnswerTimeLeft
         : gameState.questionTimeLeft[displayTeam];
-      questionTimer.textContent = `Time Left: ${Number.isFinite(timeValue) ? timeValue : '--'}s`;
+      const timerValue = `${Number.isFinite(timeValue) ? timeValue : '--'}s`;
+      questionTimer.innerHTML = `<span class="question-timer-label">Answer Time</span><span class="question-timer-value">${timerValue}</span>`;
     }
     if (heroTeam1Name) heroTeam1Name.textContent = gameState.teamNames[0] || 'Team 1';
     if (heroTeam2Name) heroTeam2Name.textContent = gameState.teamNames[1] || 'Team 2';
