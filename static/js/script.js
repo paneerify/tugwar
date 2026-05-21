@@ -757,7 +757,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setInterval(updateHeroSection, 1000);
   // Also update after every drawGame
   const origDrawGame = window.drawGame || drawGame;
-  window.drawGame = function(gameOver) {
+  const enhancedDrawGame = function(gameOver) {
     origDrawGame(gameOver);
     updateHeroSection();
     if (typeof updateAnswerControls === 'function') {
@@ -778,6 +778,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (ropeTeam1) ropeTeam1.textContent = gameState.teamNames[0] || 'Team 1';
     if (ropeTeam2) ropeTeam2.textContent = gameState.teamNames[1] || 'Team 2';
   };
+  drawGame = enhancedDrawGame;
+  window.drawGame = enhancedDrawGame;
   updateHeroSection();
   const sidebarNewGameBtn = document.getElementById('sidebar-new-game-btn');
     if (sidebarNewGameBtn) {
@@ -1022,21 +1024,32 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    answerArea.style.display = 'none';
+
     if (!currentSessionState?.game) {
-      answerArea.style.display = 'none';
       answerInput.disabled = true;
       submitBtn.disabled = true;
       answerInput.placeholder = 'Waiting for match to start...';
       return;
     }
 
-    answerArea.style.display = currentSessionState.game.gameActive ? '' : 'none';
     const isMyTurn = currentSessionState.game.gameActive && (currentSessionState.game.tiebreakerActive || currentSessionState.game.currentTeam === gameState.selectedTeam);
     answerInput.disabled = !isMyTurn;
     submitBtn.disabled = !isMyTurn;
     answerInput.placeholder = currentSessionState.game.tiebreakerActive
       ? 'Quick answer round: answer fast!'
       : (isMyTurn ? 'Type your answer...' : 'Waiting for the other team...');
+  }
+
+  function isLobbyReadyForDiffSetup(lobbyState = currentLobbyState) {
+    const currentTeam = getCurrentLobbyTeam(lobbyState);
+    if (!currentTeam || currentTeam.status !== 'matched' || !currentTeam.setupConfirmed || currentTeam.slot === null) {
+      return false;
+    }
+    const opponentTeam = currentTeam.opponentId
+      ? lobbyState.teams.find((team) => team.id === currentTeam.opponentId)
+      : null;
+    return Boolean(opponentTeam?.setupConfirmed);
   }
 
   function applySessionState(sessionState) {
@@ -1397,6 +1410,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (freshCurrentTeam?.setupConfirmed && opponentTeam?.setupConfirmed) {
       setLobbyStatus('2/2 users are ready. Continue to game setup.');
+      renderLobby();
+      await openDiffTeamSetup();
+      return;
     } else {
       setLobbyStatus(`${confirmedCount}/2 users are ready to continue.`);
     }
@@ -1519,6 +1535,9 @@ document.addEventListener('DOMContentLoaded', function() {
       currentLobbyState = lobbyState;
       if (lobbyPanel && lobbyPanel.style.display !== 'none') {
         renderLobby();
+        if (isLobbyReadyForDiffSetup()) {
+          openDiffTeamSetup();
+        }
       }
     });
     getLobbySnapshot().then((lobbyState) => {
@@ -1641,7 +1660,7 @@ document.addEventListener('DOMContentLoaded', function() {
         teamForm.style.display = 'none';
         if (gameCanvas) gameCanvas.style.display = 'none';
         const answerArea = document.getElementById('answer-area');
-        if (answerArea) answerArea.style.display = '';
+        if (answerArea) answerArea.style.display = 'none';
         setGameBoardVisible(true);
         drawGame(true);
         setLobbyStatus('Waiting for the shared match state...');
@@ -1697,6 +1716,7 @@ document.addEventListener('DOMContentLoaded', function() {
     showGameResultOverlay();
   }
   // Override drawGame globally
+  drawGame = drawGameWithNewGameBtn;
   window.drawGame = drawGameWithNewGameBtn;
 
   if (gameResultLobbyBtn) {
