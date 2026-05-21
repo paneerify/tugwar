@@ -93,6 +93,31 @@ function setGameBoardVisibleFromStart(visible) {
   setGameBoardVisibilityFallback(visible);
 }
 
+function clearLiveMatchState() {
+  if (gameState.gameTimer) {
+    clearInterval(gameState.gameTimer);
+    gameState.gameTimer = null;
+  }
+  if (gameState.questionTimer) {
+    clearInterval(gameState.questionTimer);
+    gameState.questionTimer = null;
+  }
+
+  gameState.gameActive = false;
+  gameState.matchStarted = false;
+  gameState.gameOver = false;
+  gameState.winner = null;
+  gameState.tiebreakerActive = false;
+  gameState.tiebreakerAnswered = [false, false];
+  gameState.questionAttemptedBy = [false, false];
+  gameState.currentQuestion = [null, null];
+  gameState.currentAnswer = ['', ''];
+  gameState.questionTimeLeft = [0, 0];
+  gameState.revealedAnswer = null;
+  gameState.revealAnswerTimeLeft = 0;
+  gameState.pendingNextTeam = null;
+}
+
 function startGame() {
   hideGameResultOverlay();
   gameState.matchStarted = false;
@@ -1170,6 +1195,8 @@ document.addEventListener('DOMContentLoaded', function() {
     gameState.selectedTeam = currentTeam.slot;
     gameState.teamNames[currentTeam.slot] = currentTeam.name;
     gameState.teamNames[1 - currentTeam.slot] = opponentTeam.name;
+    clearLiveMatchState();
+    hideGameResultOverlay();
 
     const team1NameInput = document.getElementById('team1-name');
     const team2NameInput = document.getElementById('team2-name');
@@ -1505,6 +1532,8 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       if (gameState.playMode === 'diff') {
+        clearLiveMatchState();
+        hideGameResultOverlay();
         const lobbyState = currentLobbyState;
         const currentTeam = getCurrentLobbyTeam(lobbyState);
         const opponentTeam = currentTeam ? lobbyState.teams.find((team) => team.id === currentTeam.opponentId) : null;
