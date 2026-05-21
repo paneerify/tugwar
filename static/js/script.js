@@ -14,6 +14,7 @@ let stopSessionSubscription = null;
 let hostTickInterval = null;
 let hostTickPending = false;
 let lobbyExpiryInterval = null;
+let activeGameResultKey = null;
 
 function createSessionId(prefix) {
   if (window.crypto && typeof window.crypto.randomUUID === 'function') {
@@ -803,11 +804,17 @@ document.addEventListener('DOMContentLoaded', function() {
   function hideGameResultOverlay() {
     if (!gameResultOverlay) return;
     gameResultOverlay.hidden = true;
+    activeGameResultKey = null;
   }
 
   function showGameResultOverlay() {
     if (!gameResultOverlay || gameState.gameActive || !gameState.gameOver) {
       hideGameResultOverlay();
+      return;
+    }
+
+    const resultKey = `${gameState.playMode}:${gameState.winner}:${gameState.teamScores.join('-')}`;
+    if (!gameResultOverlay.hidden && activeGameResultKey === resultKey) {
       return;
     }
 
@@ -827,6 +834,7 @@ document.addEventListener('DOMContentLoaded', function() {
       gameResultMessage.textContent = `${winnerName} wins the match.`;
     }
 
+    activeGameResultKey = resultKey;
     gameResultOverlay.hidden = false;
   }
 
