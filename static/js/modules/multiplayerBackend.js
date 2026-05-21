@@ -3,7 +3,7 @@ import { firebaseConfig, isFirebaseConfigured, normalizedDatabaseUrl } from './f
 const LOCAL_LOBBY_STORAGE_KEY = 'tugwar-diff-lobby-v1';
 const LOCAL_SESSION_PREFIX = 'tugwar-session-';
 const LOBBY_STALE_MS = 1000 * 60 * 60 * 4;
-const MATCH_RESPONSE_TIMEOUT_MS = 1000 * 60;
+const MATCH_RESPONSE_TIMEOUT_MS = 1000 * 60 * 3;
 
 let firebaseApiPromise = null;
 let localListeners = [];
@@ -26,6 +26,41 @@ function mapToLobbyState(teamMap) {
   return normalizeLobbyState({ teams: Object.values(teamMap || {}) });
 }
 
+function normalizeIndexedPair(rawValue, fallbackFactory) {
+  const source = rawValue || {};
+  return [source[0] ?? source['0'] ?? fallbackFactory(0), source[1] ?? source['1'] ?? fallbackFactory(1)];
+}
+
+function normalizeGameSnapshot(rawGame) {
+  if (!rawGame) {
+    return null;
+  }
+
+  return {
+    teamNames: normalizeIndexedPair(rawGame.teamNames, (index) => `Team ${index + 1}`),
+    playerNames: normalizeIndexedPair(rawGame.playerNames, () => []).map((team) => Array.isArray(team) ? team : Object.values(team || {})),
+    teamScores: normalizeIndexedPair(rawGame.teamScores, () => 0),
+    teamDifficulty: normalizeIndexedPair(rawGame.teamDifficulty, () => 0),
+    currentTeam: rawGame.currentTeam ?? 0,
+    currentPlayer: normalizeIndexedPair(rawGame.currentPlayer, () => 0),
+    currentQuestion: normalizeIndexedPair(rawGame.currentQuestion, () => null),
+    currentAnswer: normalizeIndexedPair(rawGame.currentAnswer, () => ''),
+    questionTimeLeft: normalizeIndexedPair(rawGame.questionTimeLeft, () => 0),
+    teamTimeLeft: normalizeIndexedPair(rawGame.teamTimeLeft, () => 150),
+    gameActive: Boolean(rawGame.gameActive),
+    tiebreakerActive: Boolean(rawGame.tiebreakerActive),
+    tiebreakerAnswered: normalizeIndexedPair(rawGame.tiebreakerAnswered, () => false),
+    questionAttemptedBy: normalizeIndexedPair(rawGame.questionAttemptedBy, () => false),
+    revealedAnswer: rawGame.revealedAnswer || null,
+    revealAnswerTimeLeft: rawGame.revealAnswerTimeLeft ?? 0,
+    pendingNextTeam: rawGame.pendingNextTeam ?? null,
+    selectedLevel: rawGame.selectedLevel ?? 0,
+    matchStarted: Boolean(rawGame.matchStarted),
+    winner: rawGame.winner ?? null,
+    gameOver: Boolean(rawGame.gameOver)
+  };
+}
+
 function normalizeSessionState(rawState, sessionId) {
   return {
     sessionId,
@@ -36,7 +71,7 @@ function normalizeSessionState(rawState, sessionId) {
       0: rawState?.teams?.[0] || rawState?.teams?.['0'] || null,
       1: rawState?.teams?.[1] || rawState?.teams?.['1'] || null
     },
-    game: rawState?.game || null
+    game: normalizeGameSnapshot(rawState?.game)
   };
 }
 
