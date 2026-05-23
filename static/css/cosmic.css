@@ -1304,6 +1304,18 @@ input {
   color: #fff7cc;
 }
 
+#team-form .skribbl-form-header,
+#team-form .skribbl-form-team-card label,
+#lobby-panel .lobby-intro,
+#lobby-panel .lobby-field,
+#lobby-panel .lobby-column h2,
+#lobby-panel .lobby-team-title,
+#lobby-panel .lobby-empty,
+#lobby-panel .lobby-pagination-summary,
+#lobby-panel .lobby-pagination-page {
+  color: #eef6ff;
+}
+
 .skribbl-form-team-card,
 .lobby-column {
   background: rgba(255,255,255,0.04);

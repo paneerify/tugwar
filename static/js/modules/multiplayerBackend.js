@@ -2,8 +2,8 @@ import { firebaseConfig, isFirebaseConfigured, normalizedDatabaseUrl } from './f
 
 const LOCAL_LOBBY_STORAGE_KEY = 'tugwar-diff-lobby-v1';
 const LOCAL_SESSION_PREFIX = 'tugwar-session-';
-const LOBBY_STALE_MS = 1000 * 60 * 60 * 4;
-const MATCH_RESPONSE_TIMEOUT_MS = 1000 * 60 * 3;
+const LOBBY_STALE_MS = 1000 * 60 * 5;
+const MATCH_RESPONSE_TIMEOUT_MS = 1000 * 60 * 5;
 
 let firebaseApiPromise = null;
 let localListeners = [];

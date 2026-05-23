@@ -611,6 +611,11 @@
 	margin-bottom: 0.3rem;
 	font-size: 1.1rem;
 }
+
+#team-form .skribbl-form-header,
+#team-form .skribbl-form-team-card label {
+	color: #eef6ff;
+}
 .skribbl-form-team-card input[type="text"] {
 	margin-bottom: 0.7rem;
 	padding: 0.4rem 0.7rem;
@@ -904,6 +909,16 @@
 	font-weight: 700;
 	font-size: 1.05rem;
 	color: #0d47a1;
+}
+
+#lobby-panel .lobby-intro,
+#lobby-panel .lobby-field,
+#lobby-panel .lobby-column h2,
+#lobby-panel .lobby-team-title,
+#lobby-panel .lobby-empty,
+#lobby-panel .lobby-pagination-summary,
+#lobby-panel .lobby-pagination-page {
+	color: #eef6ff;
 }
 
 .lobby-difficulty-badge {

@@ -1659,6 +1659,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const actionButton = currentTeam.status === 'matched'
         ? `
           <button type="button" id="lobby-continue-btn">${setupReadyCount === 2 ? 'Continue to Game Setup' : 'Press Continue'}</button>
+          <button type="button" id="lobby-remove-team-btn" class="lobby-secondary-btn">Remove Team</button>
           <div class="lobby-ready-counter">${setupReadyCount}/2 users ready to continue</div>
           ${readySummary}`
         : '<button type="button" id="lobby-remove-team-btn" class="lobby-secondary-btn">Remove Team</button>';
