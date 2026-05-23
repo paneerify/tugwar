@@ -1137,9 +1137,11 @@ input {
   width: calc(100% + 170px);
   max-width: 760px;
   height: 20px;
-  transform: translate(-50%, -50%);
-  transition: transform 280ms ease;
+  --rope-offset: 0px;
+  --rope-bob: 0px;
+  transform: translate(calc(-50% + var(--rope-offset)), calc(-50% - var(--rope-bob)));
   z-index: 3;
+  will-change: transform, filter;
 }
 
 .rope-line {
@@ -1152,6 +1154,7 @@ input {
   border-radius: 999px;
   background: linear-gradient(90deg, #c08b48, #f5c96a, #c08b48);
   box-shadow: 0 0 18px rgba(245, 201, 106, 0.25);
+  transform-origin: center;
 }
 
 .rope-knot {
@@ -1164,6 +1167,77 @@ input {
   border-radius: 50%;
   background: linear-gradient(135deg, #ff8db1, #fff3be);
   box-shadow: 0 0 16px rgba(255, 141, 177, 0.45);
+}
+
+.rope-group.is-moving {
+  filter: drop-shadow(0 0 18px rgba(245, 201, 106, 0.28));
+}
+
+.rope-group.is-moving .rope-line {
+  animation: rope-tension 280ms ease-out;
+}
+
+.rope-group.is-moving .rope-knot {
+  animation: rope-knot-pulse 280ms ease-out;
+}
+
+.rope-group.is-pulling-left .rope-line {
+  animation-name: rope-tension-left;
+}
+
+.rope-group.is-pulling-right .rope-line {
+  animation-name: rope-tension-right;
+}
+
+@keyframes rope-tension {
+  0% {
+    transform: translateY(-50%) scaleX(0.985);
+  }
+  40% {
+    transform: translateY(calc(-50% - 1px)) scaleX(1.01);
+  }
+  100% {
+    transform: translateY(-50%) scaleX(1);
+  }
+}
+
+@keyframes rope-tension-left {
+  0% {
+    transform: translateY(-50%) scaleX(0.985) rotate(-0.6deg);
+  }
+  45% {
+    transform: translateY(calc(-50% - 1px)) scaleX(1.012) rotate(-1.2deg);
+  }
+  100% {
+    transform: translateY(-50%) scaleX(1) rotate(0deg);
+  }
+}
+
+@keyframes rope-tension-right {
+  0% {
+    transform: translateY(-50%) scaleX(0.985) rotate(0.6deg);
+  }
+  45% {
+    transform: translateY(calc(-50% - 1px)) scaleX(1.012) rotate(1.2deg);
+  }
+  100% {
+    transform: translateY(-50%) scaleX(1) rotate(0deg);
+  }
+}
+
+@keyframes rope-knot-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.94);
+    box-shadow: 0 0 10px rgba(255, 141, 177, 0.28);
+  }
+  50% {
+    transform: translate(-50%, calc(-50% - 2px)) scale(1.14);
+    box-shadow: 0 0 22px rgba(255, 141, 177, 0.52);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 16px rgba(255, 141, 177, 0.45);
+  }
 }
 
 .team-figures.left {

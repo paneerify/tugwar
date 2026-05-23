@@ -90,6 +90,14 @@ function updateHeroSectionFallback() {
   }
 }
 
+function syncArenaDecorations() {
+  if (typeof window.__tugwarSyncArenaDecorations === 'function') {
+    window.__tugwarSyncArenaDecorations();
+    return;
+  }
+  updateHeroSectionFallback();
+}
+
 function setGameBoardVisibleFromStart(visible) {
   if (typeof window.__tugwarSetGameBoardVisible === 'function') {
     window.__tugwarSetGameBoardVisible(visible);
@@ -358,6 +366,18 @@ document.addEventListener('DOMContentLoaded', function() {
       return getPendingAnswerValue(teamIdx);
     }
 
+    function getSubmittedAnswerValue(teamIdx) {
+      const inputValue = answerInput?.value?.trim() || '';
+      const liveValue = getLiveAnswerValue(teamIdx).trim();
+      if (inputValue !== '') {
+        if (inputValue !== liveValue) {
+          updateCalculatorEntry(teamIdx, inputValue);
+        }
+        return inputValue;
+      }
+      return liveValue;
+    }
+
     function getEffectiveTeam(teamOverride = null) {
       if (teamOverride !== null && teamOverride !== undefined) {
         return teamOverride;
@@ -580,8 +600,8 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!answerInput) return;
       const effectiveTeam = getEffectiveTeam(teamOverride);
       if (effectiveTeam === null || effectiveTeam === undefined) return;
-      answerInput.value = getLiveAnswerValue(effectiveTeam);
-      const ans = answerInput.value.trim();
+      const ans = getSubmittedAnswerValue(effectiveTeam);
+      answerInput.value = ans;
       if (ans === '') return;
       if (gameState.playMode === 'diff') {
         const answeringTeam = gameState.selectedTeam;
@@ -627,6 +647,17 @@ document.addEventListener('DOMContentLoaded', function() {
       submitAnswerBtn.onclick = submitAnswer;
     }
     if (answerInput) {
+      answerInput.addEventListener('input', function() {
+        if (gameState.tiebreakerActive && gameState.playMode === 'same') {
+          return;
+        }
+        const effectiveTeam = getEffectiveTeam();
+        if (effectiveTeam === null || effectiveTeam === undefined) {
+          return;
+        }
+        updateCalculatorEntry(effectiveTeam, answerInput.value);
+      });
+
       answerInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
           submitAnswer();
@@ -840,6 +871,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (ropeTeam1) ropeTeam1.textContent = gameState.teamNames[0] || 'Team 1';
     if (ropeTeam2) ropeTeam2.textContent = gameState.teamNames[1] || 'Team 2';
   }
+
+  window.__tugwarSyncArenaDecorations = syncArenaDecorations;
 
   // Update hero section every second and after game state changes
   setInterval(updateHeroSection, 1000);
@@ -1365,6 +1398,9 @@ document.addEventListener('DOMContentLoaded', function() {
     Array.from(selectedPlayersDiv.querySelectorAll('input')).forEach((input) => {
       input.required = true;
       input.disabled = false;
+      if (!input.value.trim()) {
+        input.value = input.placeholder.replace(' Name', '');
+      }
     });
     Array.from(otherPlayersDiv.querySelectorAll('input')).forEach((input) => {
       input.required = false;
