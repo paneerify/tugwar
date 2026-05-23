@@ -1248,6 +1248,13 @@ html, body {
     color: #0d47a1;
     box-shadow: 0 6px 24px 0 rgba(33,150,243,0.18);
 }
+
+#game-board .team-card.current .team-name,
+#game-board .team-card.current .team-score,
+#game-board .team-card .team-name,
+#game-board .team-card .team-score {
+	color: #eef6ff !important;
+}
 .team-card .team-name {
     font-size: 1.5em;
     font-weight: 700;

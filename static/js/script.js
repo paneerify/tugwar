@@ -825,16 +825,28 @@ document.addEventListener('DOMContentLoaded', function() {
       const timerValue = `${Number.isFinite(timeValue) ? timeValue : '--'}s`;
       questionTimer.innerHTML = `<span class="question-timer-label">Answer Time</span><span class="question-timer-value">${timerValue}</span>`;
     }
-    if (heroTeam1Name) heroTeam1Name.textContent = gameState.teamNames[0] || 'Team 1';
-    if (heroTeam2Name) heroTeam2Name.textContent = gameState.teamNames[1] || 'Team 2';
+    if (heroTeam1Name) {
+      heroTeam1Name.textContent = gameState.teamNames[0] || 'Team 1';
+      heroTeam1Name.style.color = '#eef6ff';
+    }
+    if (heroTeam2Name) {
+      heroTeam2Name.textContent = gameState.teamNames[1] || 'Team 2';
+      heroTeam2Name.style.color = '#eef6ff';
+    }
     if (heroTeam1Members) heroTeam1Members.textContent = formatTeamMembers(0);
     if (heroTeam2Members) heroTeam2Members.textContent = formatTeamMembers(1);
     if (heroTeam1Timer) heroTeam1Timer.textContent = formatTime(gameState.teamTimeLeft[0]);
     if (heroTeam2Timer) heroTeam2Timer.textContent = formatTime(gameState.teamTimeLeft[1]);
     const heroTeam1Score = document.getElementById('hero-team1-score');
     const heroTeam2Score = document.getElementById('hero-team2-score');
-    if (heroTeam1Score) heroTeam1Score.textContent = gameState.teamScores[0];
-    if (heroTeam2Score) heroTeam2Score.textContent = gameState.teamScores[1];
+    if (heroTeam1Score) {
+      heroTeam1Score.textContent = gameState.teamScores[0];
+      heroTeam1Score.style.color = '#eef6ff';
+    }
+    if (heroTeam2Score) {
+      heroTeam2Score.textContent = gameState.teamScores[1];
+      heroTeam2Score.style.color = '#eef6ff';
+    }
     // Update current team display
     const heroCurrentTeam = document.getElementById('hero-current-team');
     if (heroCurrentTeam) {
