@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
           'Each wrong answer removes 5 points, but scores never go below 0.',
           'If a team runs out of answer time, it loses 1 point and the turn passes on.',
           'The first team to reach 60 points wins the match.',
-          'If time runs out for both teams with equal scores, the game goes to a quick answer round.',
+          'If time runs out for both teams with equal scores, the game goes to a speed round where the first correct answer wins.',
           'The rope position reflects the score difference between the two teams.'
         ]
       }
@@ -439,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
           pills[teamIdx].textContent = !gameState.gameActive
             ? 'Round complete'
             : gameState.tiebreakerActive
-              ? (gameState.tiebreakerAnswered[teamIdx] ? 'Answer locked' : 'Quick answer round')
+              ? (gameState.tiebreakerAnswered[teamIdx] ? 'Answer locked' : 'Speed round')
               : active
                 ? 'Your turn to answer'
                 : 'Waiting for turn';
@@ -590,7 +590,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       if (gameState.playMode === 'same') {
         answerInput.disabled = false;
-        answerInput.placeholder = gameState.tiebreakerActive ? 'Type the answer, then choose the team below...' : 'Type your answer...';
+        answerInput.placeholder = gameState.tiebreakerActive ? 'Speed round: type the answer, then choose the team below...' : 'Type your answer...';
       }
       syncCalculatorUi();
     }
@@ -789,7 +789,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const team2Card = document.getElementById('team2-card');
         if (mathCurrentTeam) {
           if (gameState.tiebreakerActive) {
-            mathCurrentTeam.textContent = 'Quick Answer Round';
+            mathCurrentTeam.textContent = 'Speed Round';
             mathCurrentTeam.classList.remove('team1', 'team2');
           } else if (gameState.revealedAnswer) {
             mathCurrentTeam.textContent = 'Answer Reveal';
@@ -839,7 +839,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const heroCurrentTeam = document.getElementById('hero-current-team');
     if (heroCurrentTeam) {
       if (gameState.tiebreakerActive) {
-        heroCurrentTeam.textContent = 'Quick Answer Round';
+        heroCurrentTeam.textContent = 'Speed Round';
       } else if (gameState.revealedAnswer) {
         heroCurrentTeam.textContent = 'Answer Reveal';
       } else {
@@ -1197,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', function() {
     answerInput.disabled = !isMyTurn;
     submitBtn.disabled = !isMyTurn;
     answerInput.placeholder = currentSessionState.game.tiebreakerActive
-      ? 'Quick answer round: answer fast!'
+      ? 'Speed round: answer fast!'
       : (isMyTurn ? 'Type your answer...' : 'Waiting for the other team...');
   }
 

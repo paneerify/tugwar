@@ -3,6 +3,8 @@ import { gameState, POINTS_TO_WIN } from './gameState.js';
 import { DIFFICULTY, genAdvanced } from './difficulty.js';
 import { getGameCanvas } from './dom.js';
 
+const SPEED_ROUND_TIME = 12;
+
 function cloneGameSnapshot(snapshot) {
     return {
         ...snapshot,
@@ -81,6 +83,21 @@ function queueAnswerReveal(snapshot, question, nextTeam) {
     return snapshot;
 }
 
+function startSpeedRoundQuestion(snapshot) {
+    const speedQuestion = genAdvanced();
+    snapshot.tiebreakerActive = true;
+    snapshot.tiebreakerAnswered = [false, false];
+    snapshot.currentQuestion = [speedQuestion, { ...speedQuestion }];
+    snapshot.currentAnswer = ['', ''];
+    snapshot.questionTimeLeft = [SPEED_ROUND_TIME, SPEED_ROUND_TIME];
+    snapshot.questionAttemptedBy = [false, false];
+    snapshot.revealedAnswer = null;
+    snapshot.revealAnswerTimeLeft = 0;
+    snapshot.pendingNextTeam = null;
+    snapshot.currentTeam = 0;
+    return snapshot;
+}
+
 export function buildInitialGameSnapshot(teamNames, playerNames, selectedLevel = 0) {
     const snapshot = {
         teamNames: [...teamNames],
@@ -149,7 +166,7 @@ export function resolveSubmittedAnswer(snapshot, ans, answeringTeam = snapshot.c
             return finishGame(nextState, teamIdx);
         }
         if (nextState.tiebreakerAnswered[0] && nextState.tiebreakerAnswered[1]) {
-            return queueAnswerReveal(nextState, nextState.currentQuestion[teamIdx], 0);
+            return queueAnswerReveal(nextState, nextState.currentQuestion[teamIdx], -1);
         }
         return nextState;
     }
@@ -204,18 +221,7 @@ export function resolveSubmittedAnswer(snapshot, ans, answeringTeam = snapshot.c
 export function resolveGameEnd(snapshot) {
     const nextState = cloneGameSnapshot(snapshot);
     if (nextState.teamScores[0] === nextState.teamScores[1]) {
-        nextState.tiebreakerActive = true;
-        nextState.tiebreakerAnswered = [false, false];
-        nextState.currentQuestion[0] = genAdvanced();
-        nextState.currentQuestion[1] = { ...nextState.currentQuestion[0] };
-        nextState.currentAnswer = ['', ''];
-        nextState.questionTimeLeft = [50, 50];
-        nextState.questionAttemptedBy = [false, false];
-        nextState.revealedAnswer = null;
-        nextState.revealAnswerTimeLeft = 0;
-        nextState.pendingNextTeam = null;
-        nextState.currentTeam = 0;
-        return nextState;
+        return startSpeedRoundQuestion(nextState);
     }
     const winner = nextState.teamScores[0] > nextState.teamScores[1] ? 0 : 1;
     return finishGame(nextState, winner);
@@ -231,7 +237,7 @@ export function tickGameSnapshot(snapshot) {
         nextState.revealAnswerTimeLeft = Math.max(0, nextState.revealAnswerTimeLeft - 1);
         if (nextState.revealAnswerTimeLeft === 0) {
             if (nextState.tiebreakerActive) {
-                return finishGame(nextState, null);
+                return startSpeedRoundQuestion(nextState);
             }
             return startFreshQuestion(nextState, nextState.pendingNextTeam ?? 0);
         }
@@ -242,7 +248,7 @@ export function tickGameSnapshot(snapshot) {
         nextState.questionTimeLeft[0] = Math.max(0, nextState.questionTimeLeft[0] - 1);
         nextState.questionTimeLeft[1] = Math.max(0, nextState.questionTimeLeft[1] - 1);
         if (nextState.questionTimeLeft[0] === 0 && nextState.questionTimeLeft[1] === 0) {
-            return queueAnswerReveal(nextState, nextState.currentQuestion[0], 0);
+            return queueAnswerReveal(nextState, nextState.currentQuestion[0], -1);
         }
         return nextState;
     }
