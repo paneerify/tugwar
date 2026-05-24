@@ -611,11 +611,6 @@
 	margin-bottom: 0.3rem;
 	font-size: 1.1rem;
 }
-
-#team-form .skribbl-form-header,
-#team-form .skribbl-form-team-card label {
-	color: #eef6ff;
-}
 .skribbl-form-team-card input[type="text"] {
 	margin-bottom: 0.7rem;
 	padding: 0.4rem 0.7rem;
