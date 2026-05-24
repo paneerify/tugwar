@@ -1305,7 +1305,7 @@ input {
 }
 
 #team-form .skribbl-form-header {
-  color: #fff7cc;
+  color: #7bdff6;
 }
 
 #team-form .skribbl-form-team-card {
@@ -1379,7 +1379,7 @@ input {
 
 .site-footer {
   text-align: center;
-  color: var(--text-dim);
+  color: #0a1830;
   padding: 0 0 16px;
   font-size: 0.85rem;
 }
