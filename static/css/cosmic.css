@@ -1304,7 +1304,15 @@ input {
   color: #fff7cc;
 }
 
-#team-form .skribbl-form-header,
+#team-form .skribbl-form-header {
+  color: #fff7cc;
+}
+
+#team-form .skribbl-form-team-card {
+  background: rgba(10, 24, 48, 0.78);
+  border-color: rgba(123, 223, 246, 0.18);
+}
+
 #team-form .skribbl-form-team-card label,
 #lobby-panel .lobby-intro,
 #lobby-panel .lobby-field,
